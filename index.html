@@ -24,7 +24,7 @@
         
         testBtn.onclick = async () => {
             result.innerHTML = 'Testing...'
-            const { data, error } = await supabase.from('articles').select('count')
+            const { data, error } = await supabase.from('articles').select('*').limit(1)
             
             if (error) {
                 result.innerHTML = `❌ Error: ${error.message}`
