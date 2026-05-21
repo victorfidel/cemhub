@@ -12,13 +12,12 @@ const articlesDiv = document.getElementById('articles')
 
 let currentUser = null
 
-// Check auth + load articles on page load
 checkUser()
 loadArticles()
 
-// Listen for auth changes
 supabase.auth.onAuthStateChange((event, session) => {
     checkUser()
+    loadArticles()
 })
 
 async function checkUser() {
@@ -38,10 +37,8 @@ async function checkUser() {
     }
 }
 
-// Post new article
 postBtn.onclick = async () => {
-    if (!currentUser) return
-    if (!title.value || !content.value) {
+    if (!currentUser || !title.value || !content.value) {
         msg.style.color = 'red'
         msg.textContent = 'Title and content required'
         return
@@ -62,18 +59,22 @@ postBtn.onclick = async () => {
         msg.textContent = 'Published!'
         title.value = ''
         content.value = ''
-        loadArticles() // Refresh feed
+        loadArticles()
         setTimeout(() => msg.textContent = '', 2000)
     }
 }
 
-// Load all articles
 async function loadArticles() {
     articlesDiv.innerHTML = 'Loading...'
     
-    const { data, error } = await supabase
+    // Get articles with like counts and user's like status
+    const { data: articles, error } = await supabase
         .from('articles')
-        .select('id, title, content, created_at, author_id')
+        .select(`
+            id, title, content, created_at, author_id,
+            likes(id, user_id),
+            comments(id, content, created_at, user_id)
+        `)
         .order('created_at', { ascending: false })
     
     if (error) {
@@ -81,18 +82,91 @@ async function loadArticles() {
         return
     }
     
-    if (data.length === 0) {
+    if (articles.length === 0) {
         articlesDiv.innerHTML = '<p>No articles yet. Be the first to post!</p>'
         return
     }
     
-    articlesDiv.innerHTML = data.map(article => `
-        <div class="article">
+    articlesDiv.innerHTML = articles.map(article => {
+        const likeCount = article.likes.length
+        const userLiked = currentUser ? article.likes.some(l => l.user_id === currentUser.id) : false
+        const comments = article.comments.sort((a,b) => new Date(a.created_at) - new Date(b.created_at))
+        
+        return `
+        <div class="article" data-id="${article.id}">
             <h3>${article.title}</h3>
             <p>${article.content.replace(/\n/g, '<br>')}</p>
             <div class="meta">Posted ${new Date(article.created_at).toLocaleString()}</div>
+            
+            <div class="actions">
+                <button class="likeBtn" data-id="${article.id}" ${!currentUser ? 'disabled' : ''}>
+                    ${userLiked ? '❤️' : '🤍'} ${likeCount}
+                </button>
+            </div>
+            
+            <div class="comments">
+                <h4>Comments (${comments.length})</h4>
+                <div class="comment-list">
+                    ${comments.map(c => `
+                        <div class="comment">
+                            <p>${c.content}</p>
+                            <span class="meta">${new Date(c.created_at).toLocaleTimeString()}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                ${currentUser ? `
+                <div class="comment-form">
+                    <input type="text" class="commentInput" placeholder="Add a comment..." data-id="${article.id}">
+                    <button class="commentBtn" data-id="${article.id}">Post</button>
+                </div>
+                ` : '<p>Login to comment</p>'}
+            </div>
         </div>
-    `).join('')
+        `
+    }).join('')
+    
+    // Add event listeners
+    document.querySelectorAll('.likeBtn').forEach(btn => {
+        btn.onclick = () => toggleLike(btn.dataset.id)
+    })
+    
+    document.querySelectorAll('.commentBtn').forEach(btn => {
+        btn.onclick = () => postComment(btn.dataset.id)
+    })
+}
+
+async function toggleLike(articleId) {
+    if (!currentUser) return
+    
+    const { data: existing } = await supabase
+        .from('likes')
+        .select('id')
+        .eq('article_id', articleId)
+        .eq('user_id', currentUser.id)
+        .single()
+    
+    if (existing) {
+        await supabase.from('likes').delete().eq('id', existing.id)
+    } else {
+        await supabase.from('likes').insert({ article_id: articleId, user_id: currentUser.id })
+    }
+    loadArticles()
+}
+
+async function postComment(articleId) {
+    if (!currentUser) return
+    
+    const input = document.querySelector(`.commentInput[data-id="${articleId}"]`)
+    if (!input.value) return
+    
+    await supabase.from('comments').insert({
+        article_id: articleId,
+        user_id: currentUser.id,
+        content: input.value
+    })
+    
+    input.value = ''
+    loadArticles()
 }
 
 loginBtn.onclick = () => window.location.href = './login.html'
