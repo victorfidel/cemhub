@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - CEM Hub</title>
+    <style>
+        body { font-family: system-ui; max-width: 400px; margin: 50px auto; padding: 20px; }
+        input, button { width: 100%; padding: 12px; margin: 8px 0; box-sizing: border-box; }
+        button { background: #000; color: #fff; border: none; cursor: pointer; }
+        .toggle { background: #eee; color: #000; }
+        #msg { margin-top: 15px; color: red; }
+    </style>
+</head>
+<body>
+    <h1 id="title">Login to CEM Hub</h1>
+    
+    <input type="email" id="email" placeholder="Email" required>
+    <input type="password" id="password" placeholder="Password" required>
+    
+    <button id="submitBtn">Login</button>
+    <button class="toggle" id="toggleBtn">Need an account? Sign Up</button>
+    
+    <div id="msg"></div>
+    
+    <script type="module" src="./js/auth.js"></script>
+</body>
+</html>
