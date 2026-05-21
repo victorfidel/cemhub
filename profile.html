@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - CEM Hub</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+    <header>
+        <h1><a href="./index.html">CEM Hub</a></h1>
+        <nav>
+            <span id="userEmail"></span>
+            <button id="loginBtn">Login</button>
+            <button id="logoutBtn" class="hidden">Logout</button>
+        </nav>
+    </header>
+
+    <main>
+        <div id="profileHeader" class="profile-header">
+            <h2 id="profileUsername">Loading...</h2>
+            <p id="profileBio"></p>
+            <button id="editProfileBtn" class="hidden">Edit Profile</button>
+        </div>
+
+        <div id="editProfileForm" class="hidden post-form">
+            <h3>Edit Profile</h3>
+            <input type="text" id="editUsername" placeholder="Username">
+            <textarea id="editBio" placeholder="Bio" rows="3"></textarea>
+            <button id="saveProfileBtn">Save</button>
+            <button id="cancelProfileBtn">Cancel</button>
+        </div>
+
+        <h3>Posts by <span id="postsByUser"></span></h3>
+        <div id="userArticles"></div>
+    </main>
+
+    <script type="module" src="./js/profile.js"></script>
+</body>
+</html>
