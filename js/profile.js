@@ -13,15 +13,9 @@ const saveProfileBtn = document.getElementById('saveProfileBtn')
 const cancelProfileBtn = document.getElementById('cancelProfileBtn')
 const postsByUser = document.getElementById('postsByUser')
 const userArticles = document.getElementById('userArticles')
-const profileHeader = document.getElementById('profileHeader')
 
 let currentUser = null
 let profileId = new URLSearchParams(window.location.search).get('id')
-
-// Add debug box to page
-const debugBox = document.createElement('div')
-debugBox.style.cssText = 'background:#fffae6; padding:10px; margin:10px 0; font-size:12px; border:1px solid #ccc;'
-profileHeader.before(debugBox)
 
 init()
 
@@ -40,9 +34,6 @@ async function checkUser() {
     const { data: { session } } = await supabase.auth.getSession()
     currentUser = session?.user || null
     
-    debugBox.innerHTML += `Logged in as: ${currentUser ? currentUser.email : 'null'}<br>`
-    debugBox.innerHTML += `User ID: ${currentUser ? currentUser.id : 'null'}<br>`
-    
     if (currentUser) {
         userEmail.textContent = currentUser.email
         loginBtn.classList.add('hidden')
@@ -57,11 +48,8 @@ async function checkUser() {
 async function loadProfile() {
     if (!profileId && currentUser) profileId = currentUser.id
     
-    debugBox.innerHTML += `Profile ID from URL: ${new URLSearchParams(window.location.search).get('id') || 'none'}<br>`
-    debugBox.innerHTML += `Final Profile ID used: ${profileId || 'none'}<br>`
-    
     if (!profileId) {
-        profileUsername.textContent = 'No profile ID'
+        profileUsername.textContent = 'No profile found'
         return
     }
     
@@ -70,10 +58,6 @@ async function loadProfile() {
         .select('*')
         .eq('id', profileId)
         .single()
-    
-    debugBox.innerHTML += `Profile query error: ${error ? error.message : 'none'}<br>`
-    debugBox.innerHTML += `Profile found: ${profile ? 'yes' : 'no'}<br>`
-    debugBox.innerHTML += `IDs match: ${currentUser && profileId === currentUser.id ? 'YES' : 'NO'}<br>`
     
     if (error || !profile) {
         profileUsername.textContent = 'User not found'
@@ -86,11 +70,8 @@ async function loadProfile() {
     
     if (currentUser && currentUser.id === profileId) {
         editProfileBtn.classList.remove('hidden')
-        debugBox.innerHTML += `Button should be visible now<br>`
         editUsername.value = profile.username || ''
         editBio.value = profile.bio || ''
-    } else {
-        debugBox.innerHTML += `Button hidden: not your profile<br>`
     }
 }
 
@@ -136,8 +117,8 @@ saveProfileBtn.onclick = async () => {
     const { error } = await supabase
         .from('profiles')
         .update({ 
-            username: editUsername.value, 
-            bio: editBio.value 
+            username: editUsername.value.trim(), 
+            bio: editBio.value.trim() 
         })
         .eq('id', currentUser.id)
     
