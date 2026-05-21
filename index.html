@@ -1,1 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CEM Hub - Testing</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <h1>CEM Hub</h1>
+    <p id="status">Connecting to Supabase...</p>
+    
+    <button id="testBtn">Test Database</button>
+    <div id="result"></div>
 
+    <script type="module">
+        import { supabase } from './js/supabase.js'
+        
+        const status = document.getElementById('status')
+        const result = document.getElementById('result')
+        const testBtn = document.getElementById('testBtn')
+        
+        status.textContent = 'Supabase loaded. Click button to test.'
+        
+        testBtn.onclick = async () => {
+            result.innerHTML = 'Testing...'
+            const { data, error } = await supabase.from('articles').select('count')
+            
+            if (error) {
+                result.innerHTML = `❌ Error: ${error.message}`
+                console.error(error)
+            } else {
+                result.innerHTML = `✅ Connected! Database is working.`
+                console.log('Success:', data)
+            }
+        }
+    </script>
+</body>
+  </html>
