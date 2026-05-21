@@ -67,7 +67,6 @@ postBtn.onclick = async () => {
 async function loadArticles() {
     articlesDiv.innerHTML = 'Loading...'
     
-    // Get articles with like counts and user's like status
     const { data: articles, error } = await supabase
         .from('articles')
         .select(`
@@ -118,12 +117,25 @@ async function loadArticles() {
             <div class="comments">
                 <h4>Comments (${comments.length})</h4>
                 <div class="comment-list">
-                    ${comments.map(c => `
-                        <div class="comment">
-                            <p>${c.content}</p>
-                            <span class="meta">${new Date(c.created_at).toLocaleTimeString()}</span>
+                    ${comments.map(c => {
+                        const isCommentOwner = currentUser && currentUser.id === c.user_id
+                        return `
+                        <div class="comment" data-id="${c.id}">
+                            <div class="comment-content" data-id="${c.id}">
+                                <p>${c.content}</p>
+                            </div>
+                            <div class="comment-footer">
+                                <span class="meta">${new Date(c.created_at).toLocaleTimeString()}</span>
+                                ${isCommentOwner ? `
+                                <div class="owner-actions">
+                                    <button class="editCommentBtn" data-id="${c.id}">Edit</button>
+                                    <button class="deleteCommentBtn" data-id="${c.id}">Delete</button>
+                                </div>
+                                ` : ''}
+                            </div>
                         </div>
-                    `).join('')}
+                        `
+                    }).join('')}
                 </div>
                 ${currentUser ? `
                 <div class="comment-form">
@@ -135,7 +147,6 @@ async function loadArticles() {
         `
     }).join('')
     
-    // Add event listeners
     document.querySelectorAll('.likeBtn').forEach(btn => {
         btn.onclick = () => toggleLike(btn.dataset.id)
     })
@@ -150,6 +161,14 @@ async function loadArticles() {
     
     document.querySelectorAll('.deleteBtn').forEach(btn => {
         btn.onclick = () => deleteArticle(btn.dataset.id)
+    })
+    
+    document.querySelectorAll('.editCommentBtn').forEach(btn => {
+        btn.onclick = () => editComment(btn.dataset.id)
+    })
+    
+    document.querySelectorAll('.deleteCommentBtn').forEach(btn => {
+        btn.onclick = () => deleteComment(btn.dataset.id)
     })
 }
 
@@ -224,6 +243,45 @@ async function deleteArticle(articleId) {
         .from('articles')
         .delete()
         .eq('id', articleId)
+    
+    if (error) alert(error.message)
+    else loadArticles()
+}
+
+function editComment(commentId) {
+    const contentDiv = document.querySelector(`.comment-content[data-id="${commentId}"]`)
+    const currentContent = contentDiv.querySelector('p').innerText
+    
+    contentDiv.innerHTML = `
+        <input type="text" class="editCommentInput" value="${currentContent}" style="width:100%;padding:6px;">
+        <div style="margin-top:6px;">
+            <button class="saveCommentBtn" data-id="${commentId}">Save</button>
+            <button class="cancelCommentBtn" data-id="${commentId}">Cancel</button>
+        </div>
+    `
+    
+    contentDiv.querySelector('.saveCommentBtn').onclick = async () => {
+        const newContent = contentDiv.querySelector('.editCommentInput').value
+        
+        const { error } = await supabase
+            .from('comments')
+            .update({ content: newContent })
+            .eq('id', commentId)
+        
+        if (error) alert(error.message)
+        else loadArticles()
+    }
+    
+    contentDiv.querySelector('.cancelCommentBtn').onclick = () => loadArticles()
+}
+
+async function deleteComment(commentId) {
+    if (!confirm('Delete this comment?')) return
+    
+    const { error } = await supabase
+        .from('comments')
+        .delete()
+        .eq('id', commentId)
     
     if (error) alert(error.message)
     else loadArticles()
