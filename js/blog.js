@@ -91,11 +91,22 @@ async function loadArticles() {
         const likeCount = article.likes.length
         const userLiked = currentUser ? article.likes.some(l => l.user_id === currentUser.id) : false
         const comments = article.comments.sort((a,b) => new Date(a.created_at) - new Date(b.created_at))
+        const isOwner = currentUser && currentUser.id === article.author_id
         
         return `
         <div class="article" data-id="${article.id}">
-            <h3>${article.title}</h3>
-            <p>${article.content.replace(/\n/g, '<br>')}</p>
+            <div class="article-header">
+                <h3>${article.title}</h3>
+                ${isOwner ? `
+                <div class="owner-actions">
+                    <button class="editBtn" data-id="${article.id}">Edit</button>
+                    <button class="deleteBtn" data-id="${article.id}">Delete</button>
+                </div>
+                ` : ''}
+            </div>
+            <div class="article-content" data-id="${article.id}">
+                <p>${article.content.replace(/\n/g, '<br>')}</p>
+            </div>
             <div class="meta">Posted ${new Date(article.created_at).toLocaleString()}</div>
             
             <div class="actions">
@@ -121,7 +132,6 @@ async function loadArticles() {
                 </div>
                 ` : '<p>Login to comment</p>'}
             </div>
-        </div>
         `
     }).join('')
     
@@ -132,6 +142,14 @@ async function loadArticles() {
     
     document.querySelectorAll('.commentBtn').forEach(btn => {
         btn.onclick = () => postComment(btn.dataset.id)
+    })
+    
+    document.querySelectorAll('.editBtn').forEach(btn => {
+        btn.onclick = () => editArticle(btn.dataset.id)
+    })
+    
+    document.querySelectorAll('.deleteBtn').forEach(btn => {
+        btn.onclick = () => deleteArticle(btn.dataset.id)
     })
 }
 
@@ -167,6 +185,48 @@ async function postComment(articleId) {
     
     input.value = ''
     loadArticles()
+}
+
+function editArticle(articleId) {
+    const contentDiv = document.querySelector(`.article-content[data-id="${articleId}"]`)
+    const currentContent = contentDiv.querySelector('p').innerText
+    const currentTitle = contentDiv.parentElement.querySelector('h3').innerText
+    
+    contentDiv.innerHTML = `
+        <input type="text" class="editTitle" value="${currentTitle}" style="width:100%;margin-bottom:10px;padding:8px;">
+        <textarea class="editContent" style="width:100%;height:100px;padding:8px;">${currentContent}</textarea>
+        <div style="margin-top:10px;">
+            <button class="saveBtn" data-id="${articleId}">Save</button>
+            <button class="cancelBtn" data-id="${articleId}">Cancel</button>
+        </div>
+    `
+    
+    contentDiv.querySelector('.saveBtn').onclick = async () => {
+        const newTitle = contentDiv.querySelector('.editTitle').value
+        const newContent = contentDiv.querySelector('.editContent').value
+        
+        const { error } = await supabase
+            .from('articles')
+            .update({ title: newTitle, content: newContent })
+            .eq('id', articleId)
+        
+        if (error) alert(error.message)
+        else loadArticles()
+    }
+    
+    contentDiv.querySelector('.cancelBtn').onclick = () => loadArticles()
+}
+
+async function deleteArticle(articleId) {
+    if (!confirm('Delete this article? This cannot be undone.')) return
+    
+    const { error } = await supabase
+        .from('articles')
+        .delete()
+        .eq('id', articleId)
+    
+    if (error) alert(error.message)
+    else loadArticles()
 }
 
 loginBtn.onclick = () => window.location.href = './login.html'
