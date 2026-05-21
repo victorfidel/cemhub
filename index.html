@@ -3,37 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CEM Hub - Testing</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>CEM Hub</title>
+    <style>
+        body { font-family: system-ui; max-width: 800px; margin: 0 auto; padding: 20px; }
+        nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        button { padding: 10px 20px; cursor: pointer; }
+        .hidden { display: none; }
+    </style>
 </head>
 <body>
-    <h1>CEM Hub</h1>
-    <p id="status">Connecting to Supabase...</p>
+    <nav>
+        <h1>CEM Hub</h1>
+        <div>
+            <span id="userEmail"></span>
+            <button id="loginBtn">Login</button>
+            <button id="logoutBtn" class="hidden">Logout</button>
+        </div>
+    </nav>
     
-    <button id="testBtn">Test Database</button>
-    <div id="result"></div>
+    <div id="content">
+        <h2>Welcome to CEM Hub</h2>
+        <p>Login to post articles.</p>
+    </div>
 
     <script type="module">
         import { supabase } from './js/supabase.js'
         
-        const status = document.getElementById('status')
-        const result = document.getElementById('result')
-        const testBtn = document.getElementById('testBtn')
+        const userEmail = document.getElementById('userEmail')
+        const loginBtn = document.getElementById('loginBtn')
+        const logoutBtn = document.getElementById('logoutBtn')
         
-        status.textContent = 'Supabase loaded. Click button to test.'
+        // Check auth state
+        const { data: { session } } = await supabase.auth.getSession()
+        updateUI(session)
         
-        testBtn.onclick = async () => {
-            result.innerHTML = 'Testing...'
-            const { data, error } = await supabase.from('articles').select('*').limit(1)
-            
-            if (error) {
-                result.innerHTML = `❌ Error: ${error.message}`
-                console.error(error)
+        // Listen for auth changes
+        supabase.auth.onAuthStateChange((event, session) => {
+            updateUI(session)
+        })
+        
+        function updateUI(session) {
+            if (session) {
+                userEmail.textContent = session.user.email
+                loginBtn.classList.add('hidden')
+                logoutBtn.classList.remove('hidden')
             } else {
-                result.innerHTML = `✅ Connected! Database is working.`
-                console.log('Success:', data)
+                userEmail.textContent = ''
+                loginBtn.classList.remove('hidden')
+                logoutBtn.classList.add('hidden')
             }
         }
+        
+        loginBtn.onclick = () => window.location.href = './login.html'
+        logoutBtn.onclick = async () => await supabase.auth.signOut()
     </script>
 </body>
-  </html>
+    </html>
