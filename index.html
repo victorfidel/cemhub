@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CEM Hub - Home</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <h1>Welcome to CEM Hub</h1>
+      <p>Your tagline or mission statement goes here.</p>
+      <a href="./blog.html" class="btn">Read the Blog</a>
+    </section>
+    
+    <section class="features">
+      <article>
+        <h2>About Us</h2>
+        <p>Short intro to what CEM Hub does.</p>
+        <a href="./founder.html">Meet the Founder →</a>
+      </article>
+      
+      <article>
+        <h2>Latest Posts</h2>
+        <div id="latestPosts">Loading...</div>
+        <a href="./blog.html">View all posts →</a>
+      </article>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initLayout } from './js/layout.js'
+    import { supabase } from './js/supabase.js'
+    
+    await initLayout()
+    
+    // Optional: load 3 latest posts for homepage
+    const { data: posts } = await supabase
+      .from('articles')
+      .select('id, title, created_at')
+      .order('created_at', { ascending: false })
+      .limit(3)
+    
+    if (posts) {
+      document.getElementById('latestPosts').innerHTML = posts.map(p => `
+        <div><a href="./article.html?id=${p.id}">${p.title}</a></div>
+      `).join('')
+    }
+  </script>
+</body>
+</html>
