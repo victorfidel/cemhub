@@ -33,11 +33,31 @@
         }
 
         async function loadArticles() {
+            // Get articles + like counts + comment counts + check if current user liked
             const { data: articles, error } = await supabase
              .from('articles')
-             .select('*')
+             .select(`
+                *,
+                likes(count),
+                likes!inner(user_id),
+                comments(count)
+             `)
              .order('created_at', { ascending: false })
 
+            if (error) {
+                // Fallback if the join fails due to RLS
+                const { data: fallbackArticles } = await supabase
+                  .from('articles')
+                  .select('*')
+                  .order('created_at', { ascending: false })
+                
+                renderArticles(fallbackArticles, error)
+                return
+            }
+            renderArticles(articles)
+        }
+
+        async function renderArticles(articles, error = null) {
             if (error) {
                 articlesDiv.innerHTML = `<p>Error loading articles: ${error.message}</p>`
                 return
@@ -47,7 +67,22 @@
                 return
             }
 
-            articlesDiv.innerHTML = articles.map(article => `
+            // Get all likes by current user to check "liked" state
+            let userLikes = []
+            if (user) {
+                const { data } = await supabase
+                  .from('likes')
+                  .select('article_id')
+                  .eq('user_id', user.id)
+                userLikes = data?.map(l => l.article_id) || []
+            }
+
+            articlesDiv.innerHTML = articles.map(article => {
+                const likeCount = article.likes?.[0]?.count || 0
+                const commentCount = article.comments?.[0]?.count || 0
+                const isLiked = userLikes.includes(article.id)
+
+                return `
                 <article class="article" data-id="${article.id}">
                     <h3><a href="article.html?id=${article.id}">${article.title}</a></h3>
                     <div class="meta">
@@ -56,42 +91,59 @@
                     </div>
                     <p>${article.content.substring(0, 150)}...</p>
                     <div class="actions">
-                        <a href="article.html?id=${article.id}">Read more →</a>
-                        <button class="likeBtn" data-id="${article.id}">👍 Like</button>
-                        <a href="article.html?id=${article.id}#comments">💬 Comment</a>
+                        <button class="likeBtn ${isLiked ? 'liked' : ''}" data-id="${article.id}">
+                            ${isLiked ? '❤️' : '🤍'} ${likeCount}
+                        </button>
+                        <a href="article.html?id=${article.id}#comments">💬 ${commentCount}</a>
                         ${user && user.id === article.user_id? `
                             <button class="editBtn" data-id="${article.id}">Edit</button>
                             <button class="deleteBtn" data-id="${article.id}">Delete</button>
                         ` : ''}
                     </div>
                 </article>
-            `).join('')
+            `}).join('')
         }
 
         await loadArticles()
 
-        // Handle Edit/Delete/Like clicks
+        // Handle clicks
         articlesDiv.addEventListener('click', async (e) => {
-            const id = e.target.dataset.id
+            const id = e.target.closest('[data-id]')?.dataset.id
             if (!id) return
 
+            // DELETE
             if (e.target.classList.contains('deleteBtn')) {
                 if (!confirm('Delete this article? This cannot be undone.')) return
-                
                 const { error } = await supabase.from('articles').delete().eq('id', id)
-                if (error) {
-                    alert(`Error: ${error.message}`)
-                } else {
-                    await loadArticles()
-                }
+                if (error) alert(`Error: ${error.message}`)
+                else await loadArticles()
             }
 
+            // EDIT
             if (e.target.classList.contains('editBtn')) {
                 window.location.href = `edit.html?id=${id}`
             }
 
+            // LIKE / UNLIKE
             if (e.target.classList.contains('likeBtn')) {
-                alert('Likes table not set up yet. Need to create that next.')
+                if (!user) {
+                    alert('Log in to like articles')
+                    return
+                }
+
+                const isLiked = e.target.classList.contains('liked')
+                
+                if (isLiked) {
+                    await supabase.from('likes').delete()
+                      .eq('user_id', user.id)
+                      .eq('article_id', id)
+                } else {
+                    await supabase.from('likes').insert({
+                        user_id: user.id,
+                        article_id: id
+                    })
+                }
+                await loadArticles()
             }
         })
 
@@ -125,5 +177,9 @@
             }
         })
     </script>
+    <style>
+        .likeBtn.liked { color: #e0245e; }
+        .actions button, .actions a { margin-right: 12px; }
+    </style>
 </body>
-</html>
+        </html>
