@@ -8,16 +8,16 @@ export async function initLayout() {
             <header id="siteHeader">
                 <nav>
                     <div class="nav-left">
-                        <a href="./home.html" class="logo">CEM Hub</a>
-                        <a href="./home.html">Home</a>
-                        <a href="./about.html">About</a>
-                        <a href="./blog.html">Blog</a>
-                        <a href="./hall-of-fame.html">Hall of Fame</a>
-                        <a href="./programs.html">Programs</a>
-                        <a href="./founder.html">Founder</a>
-                        <a href="./donation.html">Donate</a>
-                        <a href="./join.html">Join</a>
-                        <a href="./contact.html">Contact</a>
+                        <a href="./index.html" class="logo">CEM Hub</a>
+                        <button id="hamburgerBtn" class="hamburger">☰</button>
+                        <div id="navMenu" class="nav-menu hidden">
+                            <a href="./index.html">Homepage</a>
+                            <a href="./index.html">Blog</a>
+                            <a href="./founder.html">Founder</a>
+                            <a href="./donation.html">Donation</a>
+                            <a href="./hall-of-fame.html">Hall of Fame</a>
+                            <a href="./contact.html">Contact</a>
+                        </div>
                     </div>
                     <div class="nav-right">
                         <span id="userEmail"></span>
@@ -47,12 +47,27 @@ export async function initLayout() {
     const notifBtn = document.getElementById('notifBtn')
     const notifCount = document.getElementById('notifCount')
     const notifDropdown = document.getElementById('notifDropdown')
+    const hamburgerBtn = document.getElementById('hamburgerBtn')
+    const navMenu = document.getElementById('navMenu')
 
     let notifChannel = null
     const { data: { session } } = await supabase.auth.getSession()
     const currentUser = session?.user || null
 
     if (notifChannel) supabase.removeChannel(notifChannel)
+
+    // Hamburger toggle logic
+    hamburgerBtn.onclick = (e) => {
+        e.stopPropagation()
+        navMenu.classList.toggle('hidden')
+    }
+    
+    // Close hamburger when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!navMenu.contains(e.target) && e.target !== hamburgerBtn) {
+            navMenu.classList.add('hidden')
+        }
+    })
 
     if (currentUser) {
         userEmail.textContent = currentUser.email
@@ -73,6 +88,7 @@ export async function initLayout() {
         notifBtn.onclick = (e) => {
             e.stopPropagation()
             notifDropdown.classList.toggle('hidden')
+            navMenu.classList.add('hidden') // Close hamburger if notif opens
         }
 
         document.addEventListener('click', (e) => {
@@ -134,4 +150,4 @@ export async function initLayout() {
     }
 
     return currentUser // Return user so pages can use it
-                                         }
+}
