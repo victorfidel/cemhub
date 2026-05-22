@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Article - CEM Hub</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <main id="articleContent">
+        Loading...
+    </main>
+    
+    <script type="module">
+        import { supabase } from './supabase.js'
+        import { initLayout } from './layout.js'
+
+        const currentUser = await initLayout() // This loads header/footer + auth
+        const params = new URLSearchParams(window.location.search)
+        const articleId = params.get('id')
+        const articleContent = document.getElementById('articleContent')
+
+        if (!articleId) {
+            articleContent.innerHTML = '<p>Article not found</p>'
+        } else {
+            loadArticle(articleId)
+        }
+
+        async function loadArticle(id) {
+            const { data: article, error } = await supabase
+             .from('articles')
+             .select(`
+                    id, title, content, created_at, author_id,
+                    profiles ( username, avatar_url )
+                `)
+             .eq('id', id)
+             .single()
+
+            if (error || !article) {
+                articleContent.innerHTML = '<p>Article not found</p>'
+                return
+            }
+
+            const username = article.profiles?.username || 'Anonymous'
+            const avatar = article.profiles?.avatar_url 
+                ? `<img src="${article.profiles.avatar_url}" class="avatar">` 
+                : '👤'
+
+            articleContent.innerHTML = `
+                <article>
+                    <h1>${article.title}</h1>
+                    <div class="meta">
+                        <a href="./profile.html?id=${article.author_id}">
+                            ${avatar} ${username}
+                        </a> • ${new Date(article.created_at).toLocaleDateString()}
+                    </div>
+                    <div class="content">${article.content.replace(/\n/g, '<br>')}</div>
+                    <a href="./blog.html">← Back to Blog</a>
+                </article>
+            `
+        }
+    </script>
+</body>
+</html>
