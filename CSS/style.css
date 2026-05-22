@@ -248,3 +248,55 @@ textarea { height: 120px; resize: vertical; }
   article h1 { font-size: 1.75rem; }
   #notifDropdown { width: calc(100vw - 2rem); right: 1rem; }
 }
+
+/* Hamburger Menu */
+.hamburger {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  font-size: 1.25rem;
+  line-height: 1;
+  border-radius: var(--radius);
+}
+
+.hamburger:hover {
+  background: var(--bg);
+}
+
+.nav-menu {
+  position: absolute;
+  top: 100%;
+  left: 1rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  padding: 0.5rem 0;
+  min-width: 200px;
+  z-index: 100;
+}
+
+.nav-menu a {
+  display: block;
+  padding: 0.75rem 1rem;
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.nav-menu a:hover {
+  background: var(--bg);
+  color: var(--primary);
+}
+
+.nav-left {
+  position: relative;
+}
+
+/* Mobile: always show hamburger, hide email */
+@media (max-width: 768px) {
+  #userEmail { display: none; }
+  .nav-right { gap: 0.5rem; }
+}
