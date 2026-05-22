@@ -68,25 +68,32 @@ async function checkUser() {
 async function loadNotifications() {
     if (!currentUser) return
     
-    const { data: notifs } = await supabase
+    const { data: notifs, error } = await supabase
        .from('notifications')
        .select('*')
        .eq('user_id', currentUser.id)
        .order('created_at', { ascending: false })
        .limit(10)
     
+    // DEBUG: This will tell us if the query worked
+    if (error) {
+        alert('Notification error: ' + error.message)
+        return
+    }
+    
+    alert('Found ' + notifs.length + ' notifications') // Remove this later
+    
     const unread = notifs.filter(n => !n.is_read).length
     notifCount.textContent = unread > 0 ? unread : ''
     notifCount.style.display = unread > 0 ? 'inline' : 'none'
     
     notifDropdown.innerHTML = notifs.length ? notifs.map(n => `
-        <div class="notif-item ${n.is_read ? '' : 'unread'}" data-id="${n.id}" data-related="${n.related_id}">
+        <div class="notif-item ${n.is_read ? '' : 'unread'}" data-id="${n.id}">
             ${n.message}<br>
             <small>${new Date(n.created_at).toLocaleString()}</small>
         </div>
     `).join('') : '<div class="notif-item">No notifications</div>'
     
-    // Mark as read on click
     document.querySelectorAll('.notif-item').forEach(item => {
         item.onclick = async () => {
             const id = item.dataset.id
@@ -95,7 +102,7 @@ async function loadNotifications() {
             notifDropdown.classList.add('hidden')
         }
     })
-}
+            }
 
 postBtn.onclick = async () => {
     if (!currentUser || !title.value || !content.value) {
