@@ -1,135 +1,133 @@
 import { supabase } from './supabase.js'
 
-const userEmail = document.getElementById('userEmail')
-const loginBtn = document.getElementById('loginBtn')
-const logoutBtn = document.getElementById('logoutBtn')
-const profileUsername = document.getElementById('profileUsername')
-const profileBio = document.getElementById('profileBio')
-const editProfileBtn = document.getElementById('editProfileBtn')
-const editProfileForm = document.getElementById('editProfileForm')
-const editUsername = document.getElementById('editUsername')
-const editBio = document.getElementById('editBio')
-const saveProfileBtn = document.getElementById('saveProfileBtn')
-const cancelProfileBtn = document.getElementById('cancelProfileBtn')
-const postsByUser = document.getElementById('postsByUser')
-const userArticles = document.getElementById('userArticles')
+const params = new URLSearchParams(window.location.search)
+const profileId = params.get('id')
+const msg = document.getElementById('msg')
+const profileContent = document.getElementById('profileContent')
+const editBtn = document.getElementById('editBtn')
 
 let currentUser = null
-let profileId = new URLSearchParams(window.location.search).get('id')
+let profileUser = null
 
 init()
 
+supabase.auth.onAuthStateChange(() => init())
+
 async function init() {
-    await checkUser()
-    await loadProfile()
-    await loadUserArticles()
-}
-
-supabase.auth.onAuthStateChange(() => {
-    checkUser()
-    loadProfile()
-})
-
-async function checkUser() {
     const { data: { session } } = await supabase.auth.getSession()
     currentUser = session?.user || null
     
-    if (currentUser) {
-        userEmail.textContent = currentUser.email
-        loginBtn.classList.add('hidden')
-        logoutBtn.classList.remove('hidden')
-    } else {
-        userEmail.textContent = ''
-        loginBtn.classList.remove('hidden')
-        logoutBtn.classList.add('hidden')
+    if (!profileId) {
+        profileContent.innerHTML = '<p>No user specified</p>'
+        return
     }
+    
+    await loadProfile()
 }
 
 async function loadProfile() {
-    if (!profileId && currentUser) profileId = currentUser.id
-    
-    if (!profileId) {
-        profileUsername.textContent = 'No profile found'
-        return
-    }
-    
     const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', profileId)
-        .single()
+       .from('profiles')
+       .select('id, username, bio, avatar_url')
+       .eq('id', profileId)
+       .single()
     
-    if (error || !profile) {
-        profileUsername.textContent = 'User not found'
+    if (error ||!profile) {
+        profileContent.innerHTML = '<p>User not found</p>'
         return
     }
     
-    profileUsername.textContent = profile.username || 'Anonymous'
-    profileBio.textContent = profile.bio || 'No bio yet.'
-    postsByUser.textContent = profile.username || 'this user'
+    profileUser = profile
+    const isOwner = currentUser && currentUser.id === profileId
+    const avatarImg = profile.avatar_url 
+       ? `<img src="${profile.avatar_url}" alt="Avatar" style="width:100px;height:100px;border-radius:50%;object-fit:cover;">`
+        : `<div style="width:100px;height:100px;border-radius:50%;background:#ddd;display:flex;align-items:center;justify-content:center;font-size:40px;">👤</div>`
     
-    if (currentUser && currentUser.id === profileId) {
-        editProfileBtn.classList.remove('hidden')
-        editUsername.value = profile.username || ''
-        editBio.value = profile.bio || ''
-    }
-}
-
-async function loadUserArticles() {
-    if (!profileId) return
-    
-    const { data: articles, error } = await supabase
-        .from('articles')
-        .select(`id, title, content, created_at`)
-        .eq('author_id', profileId)
-        .order('created_at', { ascending: false })
-    
-    if (error) {
-        userArticles.innerHTML = `Error: ${error.message}`
-        return
-    }
-    
-    if (articles.length === 0) {
-        userArticles.innerHTML = '<p>No posts yet.</p>'
-        return
-    }
-    
-    userArticles.innerHTML = articles.map(article => `
-        <div class="article">
-            <h3><a href="./index.html#${article.id}">${article.title}</a></h3>
-            <p>${article.content.replace(/\n/g, '<br>')}</p>
-            <div class="meta">Posted ${new Date(article.created_at).toLocaleString()}</div>
+    profileContent.innerHTML = `
+        <div style="text-align:center;margin-bottom:20px;">
+            ${avatarImg}
         </div>
-    `).join('')
-}
-
-editProfileBtn.onclick = () => {
-    editProfileForm.classList.remove('hidden')
-    editProfileBtn.classList.add('hidden')
-}
-
-cancelProfileBtn.onclick = () => {
-    editProfileForm.classList.add('hidden')
-    editProfileBtn.classList.remove('hidden')
-}
-
-saveProfileBtn.onclick = async () => {
-    const { error } = await supabase
-        .from('profiles')
-        .update({ 
-            username: editUsername.value.trim(), 
-            bio: editBio.value.trim() 
-        })
-        .eq('id', currentUser.id)
+        <div id="viewMode">
+            <h2>${profile.username || 'Anonymous'}</h2>
+            <p style="white-space:pre-wrap;">${profile.bio || 'No bio yet'}</p>
+        </div>
+        <div id="editMode" class="hidden">
+            <input type="file" id="avatarInput" accept="image/*" style="margin-bottom:10px;">
+            <input type="text" id="usernameInput" value="${profile.username || ''}" placeholder="Username" style="width:100%;padding:8px;margin-bottom:10px;">
+            <textarea id="bioInput" placeholder="Bio" style="width:100%;height:100px;padding:8px;">${profile.bio || ''}</textarea>
+            <div style="margin-top:10px;">
+                <button id="saveBtn">Save</button>
+                <button id="cancelBtn">Cancel</button>
+            </div>
+        </div>
+    `
     
-    if (error) {
-        alert(error.message)
+    if (isOwner) {
+        editBtn.classList.remove('hidden')
+        editBtn.onclick = () => toggleEdit(true)
+        document.getElementById('saveBtn').onclick = saveProfile
+        document.getElementById('cancelBtn').onclick = () => toggleEdit(false)
     } else {
-        editProfileForm.classList.add('hidden')
-        editProfileBtn.classList.remove('hidden')
-        loadProfile()
+        editBtn.classList.add('hidden')
     }
 }
 
-loginBtn.onclick = () => window.location.href = './login.html'
-logoutBtn.onclick = async () => await supabase.auth.signOut()
+function toggleEdit(editing) {
+    document.getElementById('viewMode').classList.toggle('hidden', editing)
+    document.getElementById('editMode').classList.toggle('hidden',!editing)
+    editBtn.classList.toggle('hidden', editing)
+}
+
+async function saveProfile() {
+    const username = document.getElementById('usernameInput').value.trim()
+    const bio = document.getElementById('bioInput').value.trim()
+    const avatarFile = document.getElementById('avatarInput').files[0]
+    
+    if (!username) {
+        msg.style.color = 'red'
+        msg.textContent = 'Username required'
+        return
+    }
+    
+    msg.textContent = 'Saving...'
+    let avatar_url = profileUser.avatar_url
+    
+    if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop()
+        const filePath = `${currentUser.id}/avatar.${fileExt}`
+        
+        const { error: uploadError } = await supabase.storage
+           .from('avatars')
+           .upload(filePath, avatarFile, { upsert: true })
+        
+        if (uploadError) {
+            msg.style.color = 'red'
+            msg.textContent = uploadError.message
+            return
+        }
+        
+        const { data } = supabase.storage
+           .from('avatars')
+           .getPublicUrl(filePath)
+        
+        avatar_url = data.publicUrl
+    }
+    
+    const { error } = await supabase
+       .from('profiles')
+       .update({ username, bio, avatar_url })
+       .eq('id', currentUser.id)
+    
+    if (error) {
+        msg.style.color = 'red'
+        msg.textContent = error.message
+    } else {
+        msg.style.color = 'green'
+        msg.textContent = 'Saved!'
+        setTimeout(() => {
+            msg.textContent = ''
+            toggleEdit(false)
+            loadProfile()
+        }, 1000)
+    }
+            }
