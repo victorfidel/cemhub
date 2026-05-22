@@ -27,11 +27,13 @@ async function init() {
 }
 
 async function loadProfile() {
+    profileContent.innerHTML = 'Loading...'
+    
     const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('id, username, bio, avatar_url')
-      .eq('id', profileId)
-      .single()
+     .from('profiles')
+     .select('id, username, bio, avatar_url')
+     .eq('id', profileId)
+     .single()
     
     if (error ||!profile) {
         profileContent.innerHTML = '<p>User not found</p>'
@@ -40,31 +42,40 @@ async function loadProfile() {
     
     profileUser = profile
     
-    // Get follower/following counts
-    const { count: followerCount } = await supabase
-      .from('follows')
-      .select('*', { count: 'exact', head: true })
-      .eq('following_id', profileId)
+    // Get follower/following counts - don't crash if table missing
+    let followerCount = 0
+    let followingCount = 0
     
-    const { count: followingCount } = await supabase
-      .from('follows')
-      .select('*', { count: 'exact', head: true })
-      .eq('follower_id', profileId)
-    
-    // Check if current user follows this profile
-    if (currentUser && currentUser.id!== profileId) {
-        const { data: follow } = await supabase
-          .from('follows')
-          .select('follower_id')
-          .eq('follower_id', currentUser.id)
-          .eq('following_id', profileId)
-          .single()
-        isFollowing =!!follow
+    try {
+        const { count: fCount } = await supabase
+         .from('follows')
+         .select('*', { count: 'exact', head: true })
+         .eq('following_id', profileId)
+        followerCount = fCount || 0
+        
+        const { count: fIngCount } = await supabase
+         .from('follows')
+         .select('*', { count: 'exact', head: true })
+         .eq('follower_id', profileId)
+        followingCount = fIngCount || 0
+        
+        // Check if current user follows this profile
+        if (currentUser && currentUser.id!== profileId) {
+            const { data: follow } = await supabase
+             .from('follows')
+             .select('follower_id')
+             .eq('follower_id', currentUser.id)
+             .eq('following_id', profileId)
+             .single()
+            isFollowing =!!follow
+        }
+    } catch (e) {
+        console.log('Follows table not ready yet:', e.message)
     }
     
     const isOwner = currentUser && currentUser.id === profileId
     const avatarImg = profile.avatar_url 
-      ? `<img src="${profile.avatar_url}" alt="Avatar" style="width:100px;height:100px;border-radius:50%;object-fit:cover;">`
+     ? `<img src="${profile.avatar_url}" alt="Avatar" style="width:100px;height:100px;border-radius:50%;object-fit:cover;">`
         : `<div style="width:100px;height:100px;border-radius:50%;background:#ddd;display:flex;align-items:center;justify-content:center;font-size:40px;">👤</div>`
     
     profileContent.innerHTML = `
@@ -74,8 +85,8 @@ async function loadProfile() {
         <div id="viewMode">
             <h2>${profile.username || 'Anonymous'}</h2>
             <div style="display:flex;gap:20px;justify-content:center;margin:15px 0;">
-                <div><strong>${followerCount || 0}</strong> Followers</div>
-                <div><strong>${followingCount || 0}</strong> Following</div>
+                <div><strong>${followerCount}</strong> Followers</div>
+                <div><strong>${followingCount}</strong> Following</div>
             </div>
             <p style="white-space:pre-wrap;">${profile.bio || 'No bio yet'}</p>
             ${currentUser &&!isOwner? `
@@ -110,18 +121,21 @@ async function loadProfile() {
 async function toggleFollow() {
     if (!currentUser) return
     
+    const btn = document.getElementById('followBtn')
+    btn.disabled = true
     msg.textContent = isFollowing? 'Unfollowing...' : 'Following...'
     
     if (isFollowing) {
         const { error } = await supabase
-          .from('follows')
-          .delete()
-          .eq('follower_id', currentUser.id)
-          .eq('following_id', profileId)
+         .from('follows')
+         .delete()
+         .eq('follower_id', currentUser.id)
+         .eq('following_id', profileId)
         
         if (error) {
             msg.style.color = 'red'
             msg.textContent = error.message
+            btn.disabled = false
         } else {
             isFollowing = false
             msg.style.color = 'green'
@@ -133,12 +147,13 @@ async function toggleFollow() {
         }
     } else {
         const { error } = await supabase
-          .from('follows')
-          .insert({ follower_id: currentUser.id, following_id: profileId })
+         .from('follows')
+         .insert({ follower_id: currentUser.id, following_id: profileId })
         
         if (error) {
             msg.style.color = 'red'
             msg.textContent = error.message
+            btn.disabled = false
         } else {
             isFollowing = true
             msg.style.color = 'green'
@@ -176,8 +191,8 @@ async function saveProfile() {
         const filePath = `${currentUser.id}/avatar.${fileExt}`
         
         const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(filePath, avatarFile, { upsert: true })
+         .from('avatars')
+         .upload(filePath, avatarFile, { upsert: true })
         
         if (uploadError) {
             msg.style.color = 'red'
@@ -186,16 +201,16 @@ async function saveProfile() {
         }
         
         const { data } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(filePath)
+         .from('avatars')
+         .getPublicUrl(filePath)
         
         avatar_url = data.publicUrl
     }
     
     const { error } = await supabase
-      .from('profiles')
-      .update({ username, bio, avatar_url })
-      .eq('id', currentUser.id)
+     .from('profiles')
+     .update({ username, bio, avatar_url })
+     .eq('id', currentUser.id)
     
     if (error) {
         msg.style.color = 'red'
@@ -209,4 +224,4 @@ async function saveProfile() {
             loadProfile()
         }, 1000)
     }
-        }
+}
