@@ -2,9 +2,20 @@ import { supabase } from './supabase.js'
 
 const params = new URLSearchParams(window.location.search)
 const profileId = params.get('id')
-const msg = document.getElementById('msg')
-const profileContent = document.getElementById('profileContent')
-const editBtn = document.getElementById('editBtn')
+
+const userEmail = document.getElementById('userEmail')
+const loginBtn = document.getElementById('loginBtn')
+const logoutBtn = document.getElementById('logoutBtn')
+const profileUsername = document.getElementById('profileUsername')
+const profileBio = document.getElementById('profileBio')
+const editProfileBtn = document.getElementById('editProfileBtn')
+const editProfileForm = document.getElementById('editProfileForm')
+const editUsername = document.getElementById('editUsername')
+const editBio = document.getElementById('editBio')
+const saveProfileBtn = document.getElementById('saveProfileBtn')
+const cancelProfileBtn = document.getElementById('cancelProfileBtn')
+const postsByUser = document.getElementById('postsByUser')
+const userArticles = document.getElementById('userArticles')
 
 let currentUser = null
 let profileUser = null
@@ -17,124 +28,123 @@ async function init() {
     const { data: { session } } = await supabase.auth.getSession()
     currentUser = session?.user || null
     
+    if (currentUser) {
+        userEmail.textContent = currentUser.email
+        loginBtn.classList.add('hidden')
+        logoutBtn.classList.remove('hidden')
+    } else {
+        userEmail.textContent = ''
+        loginBtn.classList.remove('hidden')
+        logoutBtn.classList.add('hidden')
+    }
+    
     if (!profileId) {
-        profileContent.innerHTML = '<p>No user specified. Add ?id=YOUR_USER_ID to the URL</p>'
+        profileUsername.textContent = 'No user specified'
         return
     }
     
     await loadProfile()
+    await loadUserArticles()
 }
 
 async function loadProfile() {
-    profileContent.innerHTML = 'Loading profile...'
-    
     const { data: profile, error } = await supabase
-    .from('profiles')
-    .select('id, username, bio, avatar_url')
-    .eq('id', profileId)
-    .single()
+   .from('profiles')
+   .select('id, username, bio, avatar_url')
+   .eq('id', profileId)
+   .single()
     
     if (error) {
-        profileContent.innerHTML = `<p>Error loading profile: ${error.message}</p>`
+        profileUsername.textContent = `Error: ${error.message}`
         return
     }
     
     if (!profile) {
-        profileContent.innerHTML = '<p>User not found</p>'
+        profileUsername.textContent = 'User not found'
         return
     }
     
     profileUser = profile
+    profileUsername.textContent = profile.username || 'Anonymous'
+    profileBio.textContent = profile.bio || 'No bio yet'
+    postsByUser.textContent = profile.username || 'Anonymous'
+    
     const isOwner = currentUser && currentUser.id === profileId
-    const avatarImg = profile.avatar_url 
-     ? `<img src="${profile.avatar_url}" alt="Avatar" style="width:100px;height:100px;border-radius:50%;object-fit:cover;">`
-        : `<div style="width:100px;height:100px;border-radius:50%;background:#ddd;display:flex;align-items:center;justify-content:center;font-size:40px;">👤</div>`
-    
-    profileContent.innerHTML = `
-        <div style="text-align:center;margin-bottom:20px;">
-            ${avatarImg}
-        </div>
-        <div id="viewMode">
-            <h2>${profile.username || 'Anonymous'}</h2>
-            <p style="white-space:pre-wrap;">${profile.bio || 'No bio yet'}</p>
-        </div>
-        <div id="editMode" class="hidden">
-            <input type="file" id="avatarInput" accept="image/*" style="margin-bottom:10px;">
-            <input type="text" id="usernameInput" value="${profile.username || ''}" placeholder="Username" style="width:100%;padding:8px;margin-bottom:10px;">
-            <textarea id="bioInput" placeholder="Bio" style="width:100%;height:100px;padding:8px;">${profile.bio || ''}</textarea>
-            <div style="margin-top:10px;">
-                <button id="saveBtn">Save</button>
-                <button id="cancelBtn">Cancel</button>
-            </div>
-        </div>
-    `
-    
     if (isOwner) {
-        editBtn.classList.remove('hidden')
-        editBtn.onclick = () => toggleEdit(true)
-        document.getElementById('saveBtn').onclick = saveProfile
-        document.getElementById('cancelBtn').onclick = () => toggleEdit(false)
+        editProfileBtn.classList.remove('hidden')
+        editProfileBtn.onclick = () => toggleEdit(true)
+        saveProfileBtn.onclick = saveProfile
+        cancelProfileBtn.onclick = () => toggleEdit(false)
     } else {
-        editBtn.classList.add('hidden')
+        editProfileBtn.classList.add('hidden')
     }
 }
 
 function toggleEdit(editing) {
-    document.getElementById('viewMode').classList.toggle('hidden', editing)
-    document.getElementById('editMode').classList.toggle('hidden', !editing)
-    editBtn.classList.toggle('hidden', editing)
+    editProfileForm.classList.toggle('hidden', !editing)
+    editProfileBtn.classList.toggle('hidden', editing)
+    if (editing) {
+        editUsername.value = profileUser.username || ''
+        editBio.value = profileUser.bio || ''
+    }
 }
 
 async function saveProfile() {
-    const username = document.getElementById('usernameInput').value.trim()
-    const bio = document.getElementById('bioInput').value.trim()
-    const avatarFile = document.getElementById('avatarInput').files[0]
+    const username = editUsername.value.trim()
+    const bio = editBio.value.trim()
     
     if (!username) {
-        msg.style.color = 'red'
-        msg.textContent = 'Username required'
+        alert('Username required')
         return
     }
     
-    msg.textContent = 'Saving...'
-    let avatar_url = profileUser.avatar_url
-    
-    if (avatarFile) {
-        const fileExt = avatarFile.name.split('.').pop()
-        const filePath = `${currentUser.id}/avatar.${fileExt}`
-        
-        const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, avatarFile, { upsert: true })
-        
-        if (uploadError) {
-            msg.style.color = 'red'
-            msg.textContent = uploadError.message
-            return
-        }
-        
-        const { data } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath)
-        
-        avatar_url = data.publicUrl
-    }
+    saveProfileBtn.textContent = 'Saving...'
     
     const { error } = await supabase
-    .from('profiles')
-    .update({ username, bio, avatar_url })
-    .eq('id', currentUser.id)
+   .from('profiles')
+   .update({ username, bio })
+   .eq('id', currentUser.id)
     
     if (error) {
-        msg.style.color = 'red'
-        msg.textContent = error.message
+        alert(error.message)
+        saveProfileBtn.textContent = 'Save'
     } else {
-        msg.style.color = 'green'
-        msg.textContent = 'Saved!'
-        setTimeout(() => {
-            msg.textContent = ''
-            toggleEdit(false)
-            loadProfile()
-        }, 1000)
+        saveProfileBtn.textContent = 'Save'
+        toggleEdit(false)
+        loadProfile()
     }
 }
+
+async function loadUserArticles() {
+    userArticles.innerHTML = 'Loading posts...'
+    
+    const { data: articles, error } = await supabase
+   .from('articles')
+   .select(`
+            id, title, content, created_at,
+            profiles ( username )
+        `)
+   .eq('author_id', profileId)
+   .order('created_at', { ascending: false })
+    
+    if (error) {
+        userArticles.innerHTML = `Error: ${error.message}`
+        return
+    }
+    
+    if (articles.length === 0) {
+        userArticles.innerHTML = '<p>No posts yet</p>'
+        return
+    }
+    
+    userArticles.innerHTML = articles.map(article => `
+        <div class="article">
+            <h3><a href="./index.html">${article.title}</a></h3>
+            <p>${article.content.replace(/\n/g, '<br>')}</p>
+            <div class="meta">Posted ${new Date(article.created_at).toLocaleString()}</div>
+        </div>
+    `).join('')
+}
+
+loginBtn.onclick = () => window.location.href = './login.html'
+logoutBtn.onclick = async () => await supabase.auth.signOut()
