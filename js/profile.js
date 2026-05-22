@@ -8,6 +8,7 @@ const editBtn = document.getElementById('editBtn')
 
 let currentUser = null
 let profileUser = null
+let isFollowing = false
 
 init()
 
@@ -27,10 +28,10 @@ async function init() {
 
 async function loadProfile() {
     const { data: profile, error } = await supabase
-       .from('profiles')
-       .select('id, username, bio, avatar_url')
-       .eq('id', profileId)
-       .single()
+      .from('profiles')
+      .select('id, username, bio, avatar_url')
+      .eq('id', profileId)
+      .single()
     
     if (error ||!profile) {
         profileContent.innerHTML = '<p>User not found</p>'
@@ -38,9 +39,32 @@ async function loadProfile() {
     }
     
     profileUser = profile
+    
+    // Get follower/following counts
+    const { count: followerCount } = await supabase
+      .from('follows')
+      .select('*', { count: 'exact', head: true })
+      .eq('following_id', profileId)
+    
+    const { count: followingCount } = await supabase
+      .from('follows')
+      .select('*', { count: 'exact', head: true })
+      .eq('follower_id', profileId)
+    
+    // Check if current user follows this profile
+    if (currentUser && currentUser.id!== profileId) {
+        const { data: follow } = await supabase
+          .from('follows')
+          .select('follower_id')
+          .eq('follower_id', currentUser.id)
+          .eq('following_id', profileId)
+          .single()
+        isFollowing =!!follow
+    }
+    
     const isOwner = currentUser && currentUser.id === profileId
     const avatarImg = profile.avatar_url 
-       ? `<img src="${profile.avatar_url}" alt="Avatar" style="width:100px;height:100px;border-radius:50%;object-fit:cover;">`
+      ? `<img src="${profile.avatar_url}" alt="Avatar" style="width:100px;height:100px;border-radius:50%;object-fit:cover;">`
         : `<div style="width:100px;height:100px;border-radius:50%;background:#ddd;display:flex;align-items:center;justify-content:center;font-size:40px;">👤</div>`
     
     profileContent.innerHTML = `
@@ -49,7 +73,16 @@ async function loadProfile() {
         </div>
         <div id="viewMode">
             <h2>${profile.username || 'Anonymous'}</h2>
+            <div style="display:flex;gap:20px;justify-content:center;margin:15px 0;">
+                <div><strong>${followerCount || 0}</strong> Followers</div>
+                <div><strong>${followingCount || 0}</strong> Following</div>
+            </div>
             <p style="white-space:pre-wrap;">${profile.bio || 'No bio yet'}</p>
+            ${currentUser &&!isOwner? `
+                <button id="followBtn" style="margin-top:15px;padding:8px 16px;">
+                    ${isFollowing? 'Unfollow' : 'Follow'}
+                </button>
+            ` : ''}
         </div>
         <div id="editMode" class="hidden">
             <input type="file" id="avatarInput" accept="image/*" style="margin-bottom:10px;">
@@ -69,6 +102,52 @@ async function loadProfile() {
         document.getElementById('cancelBtn').onclick = () => toggleEdit(false)
     } else {
         editBtn.classList.add('hidden')
+        const followBtn = document.getElementById('followBtn')
+        if (followBtn) followBtn.onclick = toggleFollow
+    }
+}
+
+async function toggleFollow() {
+    if (!currentUser) return
+    
+    msg.textContent = isFollowing? 'Unfollowing...' : 'Following...'
+    
+    if (isFollowing) {
+        const { error } = await supabase
+          .from('follows')
+          .delete()
+          .eq('follower_id', currentUser.id)
+          .eq('following_id', profileId)
+        
+        if (error) {
+            msg.style.color = 'red'
+            msg.textContent = error.message
+        } else {
+            isFollowing = false
+            msg.style.color = 'green'
+            msg.textContent = 'Unfollowed'
+            setTimeout(() => {
+                msg.textContent = ''
+                loadProfile()
+            }, 500)
+        }
+    } else {
+        const { error } = await supabase
+          .from('follows')
+          .insert({ follower_id: currentUser.id, following_id: profileId })
+        
+        if (error) {
+            msg.style.color = 'red'
+            msg.textContent = error.message
+        } else {
+            isFollowing = true
+            msg.style.color = 'green'
+            msg.textContent = 'Following!'
+            setTimeout(() => {
+                msg.textContent = ''
+                loadProfile()
+            }, 500)
+        }
     }
 }
 
@@ -97,8 +176,8 @@ async function saveProfile() {
         const filePath = `${currentUser.id}/avatar.${fileExt}`
         
         const { error: uploadError } = await supabase.storage
-           .from('avatars')
-           .upload(filePath, avatarFile, { upsert: true })
+          .from('avatars')
+          .upload(filePath, avatarFile, { upsert: true })
         
         if (uploadError) {
             msg.style.color = 'red'
@@ -107,16 +186,16 @@ async function saveProfile() {
         }
         
         const { data } = supabase.storage
-           .from('avatars')
-           .getPublicUrl(filePath)
+          .from('avatars')
+          .getPublicUrl(filePath)
         
         avatar_url = data.publicUrl
     }
     
     const { error } = await supabase
-       .from('profiles')
-       .update({ username, bio, avatar_url })
-       .eq('id', currentUser.id)
+      .from('profiles')
+      .update({ username, bio, avatar_url })
+      .eq('id', currentUser.id)
     
     if (error) {
         msg.style.color = 'red'
@@ -130,4 +209,4 @@ async function saveProfile() {
             loadProfile()
         }, 1000)
     }
-            }
+        }
