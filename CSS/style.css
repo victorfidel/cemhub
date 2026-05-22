@@ -179,3 +179,59 @@ body { font-family: system-ui; max-width: 800px; margin: 0 auto; padding: 20px; 
 .cancelCommentBtn {
   background: #eee;
           }
+
+.hidden { display: none !important; }
+
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+}
+
+.modal-content {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    z-index: 1001;
+    min-width: 300px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.modal-body div {
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.modal-body div:last-child {
+    border-bottom: none;
+}
+
+.likeCountBtn {
+    background: none;
+    border: none;
+    color: #0066cc;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.likeCountBtn:disabled {
+    color: #999;
+    text-decoration: none;
+    cursor: default;
+}
