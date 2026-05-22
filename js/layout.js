@@ -8,8 +8,8 @@ export async function initLayout() {
             <header id="siteHeader">
                 <nav>
                     <div class="nav-left">
-                        <a href="./index.html" class="logo">CEM Hub</a>
                         <button id="hamburgerBtn" class="hamburger">☰</button>
+                        <a href="./index.html" class="logo">CEM Hub</a>
                         <div id="navMenu" class="nav-menu hidden">
                             <a href="./index.html">Homepage</a>
                             <a href="./index.html">Blog</a>
@@ -60,6 +60,7 @@ export async function initLayout() {
     hamburgerBtn.onclick = (e) => {
         e.stopPropagation()
         navMenu.classList.toggle('hidden')
+        notifDropdown.classList.add('hidden') // Close notifs if hamburger opens
     }
     
     // Close hamburger when clicking outside
