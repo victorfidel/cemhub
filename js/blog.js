@@ -14,6 +14,7 @@ let currentUser = null
 
 checkUser()
 loadArticles()
+createLikeModal()
 
 supabase.auth.onAuthStateChange((event, session) => {
     checkUser()
@@ -72,7 +73,7 @@ async function loadArticles() {
         .select(`
             id, title, content, created_at, author_id,
             profiles ( username ),
-            likes(id, user_id),
+            likes(id, user_id, profiles ( username )),
             comments(id, content, created_at, user_id, profiles ( username ))
         `)
         .order('created_at', { ascending: false })
@@ -113,7 +114,10 @@ async function loadArticles() {
             
             <div class="actions">
                 <button class="likeBtn" data-id="${article.id}" ${!currentUser ? 'disabled' : ''}>
-                    ${userLiked ? '❤️' : '🤍'} ${likeCount}
+                    ${userLiked ? '❤️' : '🤍'} 
+                </button>
+                <button class="likeCountBtn" data-id="${article.id}" ${likeCount === 0 ? 'disabled' : ''}>
+                    ${likeCount} ${likeCount === 1 ? 'like' : 'likes'}
                 </button>
             </div>
             
@@ -156,6 +160,10 @@ async function loadArticles() {
         btn.onclick = () => toggleLike(btn.dataset.id)
     })
     
+    document.querySelectorAll('.likeCountBtn').forEach(btn => {
+        btn.onclick = () => showLikes(btn.dataset.id)
+    })
+    
     document.querySelectorAll('.commentBtn').forEach(btn => {
         btn.onclick = () => postComment(btn.dataset.id)
     })
@@ -193,6 +201,52 @@ async function toggleLike(articleId) {
         await supabase.from('likes').insert({ article_id: articleId, user_id: currentUser.id })
     }
     loadArticles()
+}
+
+async function showLikes(articleId) {
+    const { data: likes } = await supabase
+        .from('likes')
+        .select('user_id, profiles ( username )')
+        .eq('article_id', articleId)
+        .order('created_at', { ascending: false })
+    
+    const modal = document.getElementById('likeModal')
+    const list = document.getElementById('likeList')
+    
+    if (likes.length === 0) {
+        list.innerHTML = '<p>No likes yet</p>'
+    } else {
+        list.innerHTML = likes.map(l => {
+            const username = l.profiles?.username || 'Anonymous'
+            return `<div><a href="./profile.html?id=${l.user_id}">${username}</a></div>`
+        }).join('')
+    }
+    
+    modal.classList.remove('hidden')
+}
+
+function createLikeModal() {
+    const modal = document.createElement('div')
+    modal.id = 'likeModal'
+    modal.className = 'hidden'
+    modal.innerHTML = `
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Liked by</h3>
+                <button id="closeLikeModal">✕</button>
+            </div>
+            <div id="likeList" class="modal-body"></div>
+        </div>
+    `
+    document.body.appendChild(modal)
+    
+    document.getElementById('closeLikeModal').onclick = () => {
+        modal.classList.add('hidden')
+    }
+    modal.querySelector('.modal-backdrop').onclick = () => {
+        modal.classList.add('hidden')
+    }
 }
 
 async function postComment(articleId) {
