@@ -16,6 +16,7 @@ const notifCount = document.getElementById('notifCount')
 const notifDropdown = document.getElementById('notifDropdown')
 
 let currentUser = null
+let notifChannel = null
 
 checkUser()
 loadArticles()
@@ -30,6 +31,12 @@ async function checkUser() {
     const { data: { session } } = await supabase.auth.getSession()
     currentUser = session?.user || null
     
+    // Unsubscribe from old channel if user changed
+    if (notifChannel) {
+        supabase.removeChannel(notifChannel)
+        notifChannel = null
+    }
+    
     if (currentUser) {
         userEmail.textContent = currentUser.email
         loginBtn.classList.add('hidden')
@@ -41,20 +48,28 @@ async function checkUser() {
         loadNotifications()
         
         // Real-time notification updates
-        supabase.channel('notifications')
+        notifChannel = supabase.channel(`notifications:${currentUser.id}`)
          .on('postgres_changes', { 
               event: 'INSERT', 
               schema: 'public', 
               table: 'notifications',
               filter: `user_id=eq.${currentUser.id}`
-          }, payload => {
+          }, () => {
               loadNotifications()
           })
          .subscribe()
          
-        notifBtn.onclick = () => {
+        notifBtn.onclick = (e) => {
+            e.stopPropagation()
             notifDropdown.classList.toggle('hidden')
         }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) {
+                notifDropdown.classList.add('hidden')
+            }
+        })
         
     } else {
         userEmail.textContent = ''
@@ -75,17 +90,21 @@ async function loadNotifications() {
        .order('created_at', { ascending: false })
        .limit(10)
     
-    // DEBUG: This will tell us if the query worked
     if (error) {
-        alert('Notification error: ' + error.message)
+        console.error('Notification error:', error.message)
         return
     }
     
-    alert('Found ' + notifs.length + ' notifications') // Remove this later
+    // Removed the alert() calls - no more popups
     
     const unread = notifs.filter(n => !n.is_read).length
-    notifCount.textContent = unread > 0 ? unread : ''
-    notifCount.style.display = unread > 0 ? 'inline' : 'none'
+    if (unread > 0) {
+        notifCount.textContent = unread
+        notifCount.classList.remove('hidden')
+    } else {
+        notifCount.textContent = ''
+        notifCount.classList.add('hidden')
+    }
     
     notifDropdown.innerHTML = notifs.length ? notifs.map(n => `
         <div class="notif-item ${n.is_read ? '' : 'unread'}" data-id="${n.id}">
@@ -94,15 +113,15 @@ async function loadNotifications() {
         </div>
     `).join('') : '<div class="notif-item">No notifications</div>'
     
-    document.querySelectorAll('.notif-item').forEach(item => {
-        item.onclick = async () => {
+    document.querySelectorAll('.notif-item[data-id]').forEach(item => {
+        item.onclick = async (e) => {
+            e.stopPropagation()
             const id = item.dataset.id
             await supabase.from('notifications').update({ is_read: true }).eq('id', id)
-            loadNotifications()
-            notifDropdown.classList.add('hidden')
+            await loadNotifications()
         }
     })
-            }
+}
 
 postBtn.onclick = async () => {
     if (!currentUser || !title.value || !content.value) {
@@ -228,6 +247,7 @@ async function loadArticles() {
                 </div>
                 ` : '<p>Login to comment</p>'}
             </div>
+        </div>
         `
     }).join('')
     
@@ -425,4 +445,3 @@ async function deleteComment(commentId) {
 
 loginBtn.onclick = () => window.location.href = './login.html'
 logoutBtn.onclick = async () => await supabase.auth.signOut()
-                               
