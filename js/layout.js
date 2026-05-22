@@ -12,7 +12,7 @@ export async function initLayout() {
                         <a href="./index.html" class="logo">CEM Hub</a>
                         <div id="navMenu" class="nav-menu hidden">
                             <a href="./index.html">Homepage</a>
-                            <a href="./index.html">Blog</a>
+                            <a href="./blog.html">Blog</a>
                             <a href="./founder.html">Founder</a>
                             <a href="./donation.html">Donation</a>
                             <a href="./hall-of-fame.html">Hall of Fame</a>
