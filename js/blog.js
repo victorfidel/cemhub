@@ -73,7 +73,7 @@ async function loadArticles() {
             id, title, content, created_at, author_id,
             profiles ( username ),
             likes(id, user_id),
-            comments(id, content, created_at, user_id)
+            comments(id, content, created_at, user_id, profiles ( username ))
         `)
         .order('created_at', { ascending: false })
     
@@ -122,13 +122,15 @@ async function loadArticles() {
                 <div class="comment-list">
                     ${comments.map(c => {
                         const isCommentOwner = currentUser && currentUser.id === c.user_id
+                        const commentUsername = c.profiles?.username || 'Anonymous'
+                        const commentUserLink = `<a href="./profile.html?id=${c.user_id}">${commentUsername}</a>`
                         return `
                         <div class="comment" data-id="${c.id}">
                             <div class="comment-content" data-id="${c.id}">
                                 <p>${c.content}</p>
                             </div>
                             <div class="comment-footer">
-                                <span class="meta">${new Date(c.created_at).toLocaleTimeString()}</span>
+                                <span class="meta">${commentUserLink} • ${new Date(c.created_at).toLocaleTimeString()}</span>
                                 ${isCommentOwner ? `
                                 <div class="owner-actions">
                                     <button class="editCommentBtn" data-id="${c.id}">Edit</button>
