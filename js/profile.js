@@ -16,6 +16,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const userArticles = document.getElementById('userArticles')
     const postsByUser = document.getElementById('postsByUser')
     
+    // Notification elements
+    const notifBtn = document.getElementById('notifBtn')
+    const notifCount = document.getElementById('notifCount')
+    const notifDropdown = document.getElementById('notifDropdown')
+    
     if (!profileId) {
         profileUsername.textContent = 'No user selected'
         profileBio.textContent = 'Click a username on the homepage'
@@ -34,10 +39,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             loginBtn.classList.add('hidden')
             logoutBtn.classList.remove('hidden')
             logoutBtn.onclick = async () => await supabase.auth.signOut()
+            
+            // Notifications
+            notifBtn.classList.remove('hidden')
+            loadNotifications(supabase, currentUser)
+            
+            // Real-time notification updates
+            supabase.channel('notifications')
+             .on('postgres_changes', { 
+                  event: 'INSERT', 
+                  schema: 'public', 
+                  table: 'notifications',
+                  filter: `user_id=eq.${currentUser.id}`
+              }, payload => {
+                  loadNotifications(supabase, currentUser)
+              })
+             .subscribe()
+             
+            notifBtn.onclick = () => {
+                notifDropdown.classList.toggle('hidden')
+            }
+            
         } else {
             loginBtn.classList.remove('hidden')
             logoutBtn.classList.add('hidden')
             loginBtn.onclick = () => window.location.href = './login.html'
+            notifBtn.classList.add('hidden')
         }
         
         // Load profile data
@@ -107,3 +134,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         userArticles.innerHTML = ''
     }
 })
+
+async function loadNotifications(supabase, currentUser) {
+    if (!currentUser) return
+    
+    const notifCount = document.getElementById('notifCount')
+    const notifDropdown = document.getElementById('notifDropdown')
+    
+    const { data: notifs } = await supabase
+       .from('notifications')
+       .select('*')
+       .eq('user_id', currentUser.id)
+       .order('created_at', { ascending: false })
+       .limit(10)
+    
+    const unread = notifs.filter(n => !n.is_read).length
+    notifCount.textContent = unread > 0 ? unread : ''
+    notifCount.style.display = unread > 0 ? 'inline' : 'none'
+    
+    notifDropdown.innerHTML = notifs.length ? notifs.map(n => `
+        <div class="notif-item ${n.is_read ? '' : 'unread'}" data-id="${n.id}" data-related="${n.related_id}">
+            ${n.message}<br>
+            <small>${new Date(n.created_at).toLocaleString()}</small>
+        </div>
+    `).join('') : '<div class="notif-item">No notifications</div>'
+    
+    // Mark as read on click
+    document.querySelectorAll('.notif-item').forEach(item => {
+        item.onclick = async () => {
+            const id = item.dataset.id
+            await supabase.from('notifications').update({ is_read: true }).eq('id', id)
+            loadNotifications(supabase, currentUser)
+            notifDropdown.classList.add('hidden')
+        }
+    })
+        }
