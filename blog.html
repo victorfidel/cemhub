@@ -19,26 +19,26 @@
         <h1>Latest Articles</h1>
         <div id="articles">Loading...</div>
     </main>
-    
+
     <script type="module">
         import { supabase } from './js/supabase.js'
         import { initLayout } from './js/layout.js'
-        
+
         const user = await initLayout()
         const postForm = document.getElementById('postForm')
         const articlesDiv = document.getElementById('articles')
-        
+
         // Only show post form if logged in
         if (user) {
             postForm.classList.remove('hidden')
         }
-        
+
         // Load articles
         const { data: articles, error } = await supabase
-            .from('articles')
-            .select('*')
-            .order('created_at', { ascending: false })
-        
+           .from('articles')
+           .select('*')
+           .order('created_at', { ascending: false })
+
         if (error) {
             articlesDiv.innerHTML = `<p>Error loading articles: ${error.message}</p>`
         } else if (articles.length === 0) {
@@ -48,13 +48,13 @@
                 <article class="article">
                     <h3><a href="article.html?id=${article.id}">${article.title}</a></h3>
                     <div class="meta">
-                        By ${article.author || 'Anonymous'} • 
+                        By ${article.author_name || article.author_email || 'Anonymous'} •
                         Posted ${new Date(article.created_at).toLocaleDateString()}
                     </div>
                     <p>${article.content.substring(0, 150)}...</p>
                     <div class="actions">
                         <a href="article.html?id=${article.id}">Read more →</a>
-                        ${user && user.id === article.user_id ? `
+                        ${user && user.id === article.user_id? `
                             <button class="editBtn" data-id="${article.id}">Edit</button>
                             <button class="deleteBtn" data-id="${article.id}">Delete</button>
                         ` : ''}
@@ -62,25 +62,27 @@
                 </article>
             `).join('')
         }
-        
+
         // Publish new article
         document.getElementById('publishBtn')?.addEventListener('click', async () => {
             const title = document.getElementById('title').value
             const content = document.getElementById('content').value
             const msg = document.getElementById('msg')
-            
-            if (!title || !content) {
+
+            if (!title ||!content) {
                 msg.textContent = 'Title and content required'
                 return
             }
-            
+
             const { error } = await supabase.from('articles').insert({
                 title,
                 content,
                 user_id: user.id,
-                author: user.email
+                author_id: user.id,
+                author_email: user.email,
+                author_name: user.user_metadata?.full_name || user.email.split('@')[0]
             })
-            
+
             if (error) {
                 msg.textContent = `Error: ${error.message}`
             } else {
@@ -90,4 +92,4 @@
         })
     </script>
 </body>
-</html>
+    </html>
