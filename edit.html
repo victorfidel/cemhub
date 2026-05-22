@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Article - CEM Hub</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./CSS/style.css">
+</head>
+<body>
+    <main>
+        <h1>Edit Article</h1>
+        <div id="editForm">
+            <input type="text" id="title" placeholder="Article title">
+            <textarea id="content" placeholder="Write your article..." rows="15"></textarea>
+            <button id="updateBtn">Update Article</button>
+            <button id="cancelBtn">Cancel</button>
+            <div id="msg"></div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { supabase } from './js/supabase.js'
+        import { initLayout } from './js/layout.js'
+
+        const user = await initLayout()
+        if (!user) window.location.href = 'login.html'
+
+        const params = new URLSearchParams(window.location.search)
+        const id = params.get('id')
+        
+        if (!id) window.location.href = 'blog.html'
+
+        // Load article
+        const { data: article, error } = await supabase
+          .from('articles')
+          .select('*')
+          .eq('id', id)
+          .single()
+
+        if (error || !article) {
+            document.body.innerHTML = '<p>Article not found</p>'
+            throw new Error('Article not found')
+        }
+
+        // Check ownership
+        if (article.user_id !== user.id) {
+            alert('You can only edit your own articles')
+            window.location.href = 'blog.html'
+        }
+
+        document.getElementById('title').value = article.title
+        document.getElementById('content').value = article.content
+
+        // Update
+        document.getElementById('updateBtn').addEventListener('click', async () => {
+            const title = document.getElementById('title').value
+            const content = document.getElementById('content').value
+            const msg = document.getElementById('msg')
+
+            const { error } = await supabase
+              .from('articles')
+              .update({ title, content })
+              .eq('id', id)
+
+            if (error) {
+                msg.textContent = `Error: ${error.message}`
+            } else {
+                msg.textContent = 'Updated!'
+                setTimeout(() => window.location.href = `article.html?id=${id}`, 800)
+            }
+        })
+
+        document.getElementById('cancelBtn').addEventListener('click', () => {
+            window.location.href = `article.html?id=${id}`
+        })
+    </script>
+</body>
+  </html>
