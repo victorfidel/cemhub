@@ -39,7 +39,7 @@ async function checkUser() {
 }
 
 postBtn.onclick = async () => {
-    if (!currentUser || !title.value || !content.value) {
+    if (!currentUser ||!title.value ||!content.value) {
         msg.style.color = 'red'
         msg.textContent = 'Title and content required'
         return
@@ -65,18 +65,25 @@ postBtn.onclick = async () => {
     }
 }
 
+function avatarHTML(url, size = 32) {
+    if (url) {
+        return `<img src="${url}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px;">`
+    }
+    return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:#ddd;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;vertical-align:middle;">👤</div>`
+}
+
 async function loadArticles() {
     articlesDiv.innerHTML = 'Loading...'
     
     const { data: articles, error } = await supabase
-        .from('articles')
-        .select(`
+       .from('articles')
+       .select(`
             id, title, content, created_at, author_id,
-            profiles ( username ),
-            likes(id, user_id, profiles ( username )),
-            comments(id, content, created_at, user_id, profiles ( username ))
+            profiles ( username, avatar_url ),
+            likes(id, user_id, profiles ( username, avatar_url )),
+            comments(id, content, created_at, user_id, profiles ( username, avatar_url ))
         `)
-        .order('created_at', { ascending: false })
+       .order('created_at', { ascending: false })
     
     if (error) {
         articlesDiv.innerHTML = `Error: ${error.message}`
@@ -90,17 +97,18 @@ async function loadArticles() {
     
     articlesDiv.innerHTML = articles.map(article => {
         const likeCount = article.likes.length
-        const userLiked = currentUser ? article.likes.some(l => l.user_id === currentUser.id) : false
+        const userLiked = currentUser? article.likes.some(l => l.user_id === currentUser.id) : false
         const comments = article.comments.sort((a,b) => new Date(a.created_at) - new Date(b.created_at))
         const isOwner = currentUser && currentUser.id === article.author_id
         const username = article.profiles?.username || 'Anonymous'
-        const authorLink = `<a href="./profile.html?id=${article.author_id}">${username}</a>`
+        const avatar = avatarHTML(article.profiles?.avatar_url)
+        const authorLink = `<a href="./profile.html?id=${article.author_id}">${avatar}${username}</a>`
         
         return `
         <div class="article" data-id="${article.id}">
             <div class="article-header">
                 <h3>${article.title}</h3>
-                ${isOwner ? `
+                ${isOwner? `
                 <div class="owner-actions">
                     <button class="editBtn" data-id="${article.id}">Edit</button>
                     <button class="deleteBtn" data-id="${article.id}">Delete</button>
@@ -113,11 +121,11 @@ async function loadArticles() {
             <div class="meta">By ${authorLink} • Posted ${new Date(article.created_at).toLocaleString()}</div>
             
             <div class="actions">
-                <button class="likeBtn" data-id="${article.id}" ${!currentUser ? 'disabled' : ''}>
-                    ${userLiked ? '❤️' : '🤍'} 
+                <button class="likeBtn" data-id="${article.id}" ${!currentUser? 'disabled' : ''}>
+                    ${userLiked? '❤️' : '🤍'} 
                 </button>
-                <button class="likeCountBtn" data-id="${article.id}" ${likeCount === 0 ? 'disabled' : ''}>
-                    ${likeCount} ${likeCount === 1 ? 'like' : 'likes'}
+                <button class="likeCountBtn" data-id="${article.id}" ${likeCount === 0? 'disabled' : ''}>
+                    ${likeCount} ${likeCount === 1? 'like' : 'likes'}
                 </button>
             </div>
             
@@ -127,7 +135,8 @@ async function loadArticles() {
                     ${comments.map(c => {
                         const isCommentOwner = currentUser && currentUser.id === c.user_id
                         const commentUsername = c.profiles?.username || 'Anonymous'
-                        const commentUserLink = `<a href="./profile.html?id=${c.user_id}">${commentUsername}</a>`
+                        const commentAvatar = avatarHTML(c.profiles?.avatar_url, 24)
+                        const commentUserLink = `<a href="./profile.html?id=${c.user_id}">${commentAvatar}${commentUsername}</a>`
                         return `
                         <div class="comment" data-id="${c.id}">
                             <div class="comment-content" data-id="${c.id}">
@@ -135,7 +144,7 @@ async function loadArticles() {
                             </div>
                             <div class="comment-footer">
                                 <span class="meta">${commentUserLink} • ${new Date(c.created_at).toLocaleTimeString()}</span>
-                                ${isCommentOwner ? `
+                                ${isCommentOwner? `
                                 <div class="owner-actions">
                                     <button class="editCommentBtn" data-id="${c.id}">Edit</button>
                                     <button class="deleteCommentBtn" data-id="${c.id}">Delete</button>
@@ -146,7 +155,7 @@ async function loadArticles() {
                         `
                     }).join('')}
                 </div>
-                ${currentUser ? `
+                ${currentUser? `
                 <div class="comment-form">
                     <input type="text" class="commentInput" placeholder="Add a comment..." data-id="${article.id}">
                     <button class="commentBtn" data-id="${article.id}">Post</button>
@@ -189,11 +198,11 @@ async function toggleLike(articleId) {
     if (!currentUser) return
     
     const { data: existing } = await supabase
-        .from('likes')
-        .select('id')
-        .eq('article_id', articleId)
-        .eq('user_id', currentUser.id)
-        .single()
+       .from('likes')
+       .select('id')
+       .eq('article_id', articleId)
+       .eq('user_id', currentUser.id)
+       .single()
     
     if (existing) {
         await supabase.from('likes').delete().eq('id', existing.id)
@@ -205,10 +214,10 @@ async function toggleLike(articleId) {
 
 async function showLikes(articleId) {
     const { data: likes } = await supabase
-        .from('likes')
-        .select('user_id, profiles ( username )')
-        .eq('article_id', articleId)
-        .order('created_at', { ascending: false })
+       .from('likes')
+       .select('user_id, profiles ( username, avatar_url )')
+       .eq('article_id', articleId)
+       .order('created_at', { ascending: false })
     
     const modal = document.getElementById('likeModal')
     const list = document.getElementById('likeList')
@@ -218,7 +227,8 @@ async function showLikes(articleId) {
     } else {
         list.innerHTML = likes.map(l => {
             const username = l.profiles?.username || 'Anonymous'
-            return `<div><a href="./profile.html?id=${l.user_id}">${username}</a></div>`
+            const avatar = avatarHTML(l.profiles?.avatar_url, 24)
+            return `<div><a href="./profile.html?id=${l.user_id}">${avatar}${username}</a></div>`
         }).join('')
     }
     
@@ -284,9 +294,9 @@ function editArticle(articleId) {
         const newContent = contentDiv.querySelector('.editContent').value
         
         const { error } = await supabase
-            .from('articles')
-            .update({ title: newTitle, content: newContent })
-            .eq('id', articleId)
+           .from('articles')
+           .update({ title: newTitle, content: newContent })
+           .eq('id', articleId)
         
         if (error) alert(error.message)
         else loadArticles()
@@ -299,9 +309,9 @@ async function deleteArticle(articleId) {
     if (!confirm('Delete this article? This cannot be undone.')) return
     
     const { error } = await supabase
-        .from('articles')
-        .delete()
-        .eq('id', articleId)
+       .from('articles')
+       .delete()
+       .eq('id', articleId)
     
     if (error) alert(error.message)
     else loadArticles()
@@ -323,9 +333,9 @@ function editComment(commentId) {
         const newContent = contentDiv.querySelector('.editCommentInput').value
         
         const { error } = await supabase
-            .from('comments')
-            .update({ content: newContent })
-            .eq('id', commentId)
+           .from('comments')
+           .update({ content: newContent })
+           .eq('id', commentId)
         
         if (error) alert(error.message)
         else loadArticles()
@@ -338,9 +348,9 @@ async function deleteComment(commentId) {
     if (!confirm('Delete this comment?')) return
     
     const { error } = await supabase
-        .from('comments')
-        .delete()
-        .eq('id', commentId)
+       .from('comments')
+       .delete()
+       .eq('id', commentId)
     
     if (error) alert(error.message)
     else loadArticles()
