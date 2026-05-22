@@ -1,37 +1,49 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
+    <title>CEM Hub</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CEM Hub</title>
-    
-    <link rel="stylesheet" href="CSS/style.css">
+    <link rel="stylesheet" href="./CSS/style.css">
 </head>
 <body>
-   <nav>
-    <h1><a href="./index.html">CEM Hub</a></h1>
-    <div>
-        <button id="notifBtn" class="hidden">🔔 <span id="notifCount"></span></button>
-        <span id="userEmail"></span>
-        <button id="loginBtn">Login</button>
-        <button id="logoutBtn" class="hidden">Logout</button>
-    </div>
-</nav>
-<div id="notifDropdown" class="hidden"></div>
-    
-    <div id="postForm" class="hidden">
-        <h2>New Post</h2>
-        <input type="text" id="title" placeholder="Article title" required>
-        <textarea id="content" placeholder="Write your article..." required></textarea>
-        <button id="postBtn">Publish Article</button>
-        <div id="msg"></div>
-    </div>
-    
-    <div id="feed">
-        <h2>Latest Articles</h2>
+    <main id="blogList">
+        <h1>Latest Articles</h1>
         <div id="articles">Loading...</div>
-    </div>
-
-    <script type="module" src="./js/blog.js"></script>
+    </main>
+    
+    <script type="module">
+        import { supabase } from './js/supabase.js'
+        import { initLayout } from './js/layout.js'
+        
+        await initLayout()
+        
+        const { data: articles, error } = await supabase
+            .from('articles')
+            .select('*')
+            .order('created_at', { ascending: false })
+        
+        const articlesDiv = document.getElementById('articles')
+        
+        if (error) {
+            articlesDiv.innerHTML = `<p>Error loading articles: ${error.message}</p>`
+        } else if (articles.length === 0) {
+            articlesDiv.innerHTML = '<p>No articles yet.</p>'
+        } else {
+            articlesDiv.innerHTML = articles.map(article => `
+                <article class="article">
+                    <h3><a href="article.html?id=${article.id}">${article.title}</a></h3>
+                    <div class="meta">
+                        By ${article.author || 'Anonymous'} • 
+                        Posted ${new Date(article.created_at).toLocaleDateString()}
+                    </div>
+                    <p>${article.content.substring(0, 150)}...</p>
+                    <div class="actions">
+                        <a href="article.html?id=${article.id}">Read more →</a>
+                    </div>
+                </article>
+            `).join('')
+        }
+    </script>
 </body>
 </html>
