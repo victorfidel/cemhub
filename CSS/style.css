@@ -64,7 +64,7 @@ article h3 { margin: 0 0 10px 0; }
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 999; /* FIXED: was 50 */
 }
 
 #siteHeader nav {
@@ -77,12 +77,17 @@ article h3 { margin: 0 0 10px 0; }
   gap: 1rem;
   border-bottom: none;
   margin-bottom: 0;
+  overflow: visible; /* FIXED: prevents clipping */
 }
 
 .nav-left, .nav-right {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1rem; /* was 1.5rem */
+}
+
+.nav-left {
+  position: relative; /* FIXED: needed for dropdown */
 }
 
 .nav-left a {
@@ -178,6 +183,7 @@ textarea { height: 120px; resize: vertical; }
   box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
   max-height: 400px;
   overflow-y: auto;
+  z-index: 9999; /* FIXED: ensure above all */
 }
 
 .notif-item {
@@ -201,7 +207,7 @@ textarea { height: 120px; resize: vertical; }
 }
 .notif-item small { color: var(--text-muted); display: block; margin-top: 4px; }
 
-/* Blog likes + comments - kept from your old CSS */
+/* Blog likes + comments */
 .actions { 
   margin: 15px 0; 
 }
@@ -239,16 +245,6 @@ textarea { height: 120px; resize: vertical; }
 
 .hidden { display: none !important; }
 
-/* Mobile */
-@media (max-width: 768px) {
-  .nav-left a:not(.logo) { display: none; }
-  #userEmail { display: none; }
-  main { margin: 1rem auto; }
-  article { padding: 1.5rem; }
-  article h1 { font-size: 1.75rem; }
-  #notifDropdown { width: calc(100vw - 2rem); right: 1rem; }
-}
-
 /* Hamburger Menu */
 .hamburger {
   background: transparent;
@@ -258,7 +254,6 @@ textarea { height: 120px; resize: vertical; }
   font-size: 1.25rem;
   line-height: 1;
   border-radius: var(--radius);
-  order: -1; /* Ensures it stays first in flex */
 }
 
 .hamburger:hover {
@@ -267,15 +262,15 @@ textarea { height: 120px; resize: vertical; }
 
 .nav-menu {
   position: absolute;
-  top: calc(100% + 8px); /* 8px gap from header */
+  top: calc(100% + 8px);
   left: 0;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.15);
+  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.3);
   padding: 0.5rem 0;
   min-width: 220px;
-  z-index: 1000; /* Higher z-index fixes overlap */
+  z-index: 9999; /* FIXED: was 1000 */
 }
 
 .nav-menu a {
@@ -292,12 +287,11 @@ textarea { height: 120px; resize: vertical; }
   color: var(--primary);
 }
 
-.nav-left {
-  position: relative;
-  gap: 1rem; /* Add space between ☰ and logo */
-}
-
-/* Make sure header stays on top of everything */
-#siteHeader {
-  z-index: 50;
-}
+/* Mobile */
+@media (max-width: 768px) {
+  #userEmail { display: none; }
+  main { margin: 1rem auto; }
+  article { padding: 1.5rem; }
+  article h1 { font-size: 1.75rem; }
+  #notifDropdown { width: calc(100vw - 2rem); right: 1rem; }
+  }
