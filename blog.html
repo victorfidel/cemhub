@@ -28,32 +28,37 @@
         const postForm = document.getElementById('postForm')
         const articlesDiv = document.getElementById('articles')
 
-        // Only show post form if logged in
         if (user) {
             postForm.classList.remove('hidden')
         }
 
-        // Load articles
-        const { data: articles, error } = await supabase
-           .from('articles')
-           .select('*')
-           .order('created_at', { ascending: false })
+        async function loadArticles() {
+            const { data: articles, error } = await supabase
+             .from('articles')
+             .select('*')
+             .order('created_at', { ascending: false })
 
-        if (error) {
-            articlesDiv.innerHTML = `<p>Error loading articles: ${error.message}</p>`
-        } else if (articles.length === 0) {
-            articlesDiv.innerHTML = '<p>No articles yet.</p>'
-        } else {
+            if (error) {
+                articlesDiv.innerHTML = `<p>Error loading articles: ${error.message}</p>`
+                return
+            } 
+            if (articles.length === 0) {
+                articlesDiv.innerHTML = '<p>No articles yet.</p>'
+                return
+            }
+
             articlesDiv.innerHTML = articles.map(article => `
-                <article class="article">
+                <article class="article" data-id="${article.id}">
                     <h3><a href="article.html?id=${article.id}">${article.title}</a></h3>
                     <div class="meta">
-                        By ${article.author_name || article.author_email || 'Anonymous'} •
+                        By <a href="profile.html?user=${article.author_id}">${article.author_name || article.author_email || 'Anonymous'}</a> • 
                         Posted ${new Date(article.created_at).toLocaleDateString()}
                     </div>
                     <p>${article.content.substring(0, 150)}...</p>
                     <div class="actions">
                         <a href="article.html?id=${article.id}">Read more →</a>
+                        <button class="likeBtn" data-id="${article.id}">👍 Like</button>
+                        <a href="article.html?id=${article.id}#comments">💬 Comment</a>
                         ${user && user.id === article.user_id? `
                             <button class="editBtn" data-id="${article.id}">Edit</button>
                             <button class="deleteBtn" data-id="${article.id}">Delete</button>
@@ -62,6 +67,33 @@
                 </article>
             `).join('')
         }
+
+        await loadArticles()
+
+        // Handle Edit/Delete/Like clicks
+        articlesDiv.addEventListener('click', async (e) => {
+            const id = e.target.dataset.id
+            if (!id) return
+
+            if (e.target.classList.contains('deleteBtn')) {
+                if (!confirm('Delete this article? This cannot be undone.')) return
+                
+                const { error } = await supabase.from('articles').delete().eq('id', id)
+                if (error) {
+                    alert(`Error: ${error.message}`)
+                } else {
+                    await loadArticles()
+                }
+            }
+
+            if (e.target.classList.contains('editBtn')) {
+                window.location.href = `edit.html?id=${id}`
+            }
+
+            if (e.target.classList.contains('likeBtn')) {
+                alert('Likes table not set up yet. Need to create that next.')
+            }
+        })
 
         // Publish new article
         document.getElementById('publishBtn')?.addEventListener('click', async () => {
@@ -87,9 +119,11 @@
                 msg.textContent = `Error: ${error.message}`
             } else {
                 msg.textContent = 'Published!'
-                setTimeout(() => location.reload(), 1000)
+                document.getElementById('title').value = ''
+                document.getElementById('content').value = ''
+                await loadArticles()
             }
         })
     </script>
 </body>
-    </html>
+</html>
