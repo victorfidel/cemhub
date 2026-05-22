@@ -8,14 +8,16 @@
     <link rel="stylesheet" href="CSS/style.css">
 </head>
 <body>
-    <nav>
-        <h1>CEM Hub</h1>
-        <div>
-            <span id="userEmail"></span>
-            <button id="loginBtn">Login</button>
-            <button id="logoutBtn" class="hidden">Logout</button>
-        </div>
-    </nav>
+   <nav>
+    <h1><a href="./index.html">CEM Hub</a></h1>
+    <div>
+        <button id="notifBtn" class="hidden">🔔 <span id="notifCount"></span></button>
+        <span id="userEmail"></span>
+        <button id="loginBtn">Login</button>
+        <button id="logoutBtn" class="hidden">Logout</button>
+    </div>
+</nav>
+<div id="notifDropdown" class="hidden"></div>
     
     <div id="postForm" class="hidden">
         <h2>New Post</h2>
