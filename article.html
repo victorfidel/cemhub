@@ -2,42 +2,49 @@
 <html>
 <head>
     <title>Article - CEM Hub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
-    <div id="debug" style="background:#ffeeee;padding:20px;font-family:monospace;"></div>
-    <main id="articleContent">Loading...</main>
+    <main id="articleContent">
+        <p>Loading article...</p>
+    </main>
     
     <script type="module">
-        const debug = document.getElementById('debug')
+        import { supabase } from './js/supabase.js'
+        import { initLayout } from './js/layout.js'
         
-        try {
-            debug.innerHTML += '1. Script started<br>'
+        const user = await initLayout()
+        
+        const params = new URLSearchParams(window.location.search)
+        const articleId = params.get('id')
+        const articleContent = document.getElementById('articleContent')
+        
+        if (!articleId) {
+            articleContent.innerHTML = '<h1>Error</h1><p>No article ID provided in URL.</p>'
+        } else {
+            const { data, error } = await supabase
+                .from('articles')
+                .select('*')
+                .eq('id', articleId)
+                .single()
             
-            const { supabase } = await import('./js/supabase.js')
-            debug.innerHTML += '2. Supabase imported<br>'
-            
-            const { initLayout } = await import('./js/layout.js')
-            debug.innerHTML += '3. Layout imported<br>'
-            
-            const user = await initLayout()
-            debug.innerHTML += '4. initLayout ran. User: ' + (user?.email || 'none') + '<br>'
-            
-            const params = new URLSearchParams(window.location.search)
-            const articleId = params.get('id')
-            debug.innerHTML += '5. Article ID: ' + articleId + '<br>'
-            
-            if (!articleId) {
-                document.getElementById('articleContent').innerHTML = 'No article ID in URL'
+            if (error) {
+                articleContent.innerHTML = `<h1>Error</h1><p>Could not load article: ${error.message}</p>`
             } else {
-                const { data, error } = await supabase.from('articles').select('*').eq('id', articleId).single()
-                if (error) throw error
-                document.getElementById('articleContent').innerHTML = `<h1>${data.title}</h1><p>${data.content}</p>`
-                debug.innerHTML += '6. Article loaded<br>'
+                document.title = `${data.title} - CEM Hub`
+                articleContent.innerHTML = `
+                    <article>
+                        <h1>${data.title}</h1>
+                        <div class="article-meta">
+                            <small>Published: ${new Date(data.created_at).toLocaleDateString()}</small>
+                        </div>
+                        <div class="article-body">
+                            ${data.content}
+                        </div>
+                    </article>
+                `
             }
-            
-        } catch (err) {
-            debug.innerHTML += `<br><b>ERROR:</b> ${err.message}<br>`
-            debug.innerHTML += `<b>Stack:</b> ${err.stack}`
         }
     </script>
 </body>
