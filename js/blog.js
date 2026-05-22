@@ -1,8 +1,8 @@
 import { supabase } from './supabase.js'
+import { initLayout } from './layout.js'
 
-const userEmail = document.getElementById('userEmail')
-const loginBtn = document.getElementById('loginBtn')
-const logoutBtn = document.getElementById('logoutBtn')
+const currentUser = await initLayout() // Loads header, auth, notifications
+
 const postForm = document.getElementById('postForm')
 const postBtn = document.getElementById('postBtn')
 const title = document.getElementById('title')
@@ -10,118 +10,18 @@ const content = document.getElementById('content')
 const msg = document.getElementById('msg')
 const articlesDiv = document.getElementById('articles')
 
-// Notification elements
-const notifBtn = document.getElementById('notifBtn')
-const notifCount = document.getElementById('notifCount')
-const notifDropdown = document.getElementById('notifDropdown')
+if (currentUser) {
+    postForm.classList.remove('hidden')
+} else {
+    postForm.classList.add('hidden')
+}
 
-let currentUser = null
-let notifChannel = null
-
-checkUser()
 loadArticles()
 createLikeModal()
 
-supabase.auth.onAuthStateChange((event, session) => {
-    checkUser()
+supabase.auth.onAuthStateChange(() => {
     loadArticles()
 })
-
-async function checkUser() {
-    const { data: { session } } = await supabase.auth.getSession()
-    currentUser = session?.user || null
-    
-    // Unsubscribe from old channel if user changed
-    if (notifChannel) {
-        supabase.removeChannel(notifChannel)
-        notifChannel = null
-    }
-    
-    if (currentUser) {
-        userEmail.textContent = currentUser.email
-        loginBtn.classList.add('hidden')
-        logoutBtn.classList.remove('hidden')
-        postForm.classList.remove('hidden')
-        
-        // Notifications
-        notifBtn.classList.remove('hidden')
-        loadNotifications()
-        
-        // Real-time notification updates
-        notifChannel = supabase.channel(`notifications:${currentUser.id}`)
-         .on('postgres_changes', { 
-              event: 'INSERT', 
-              schema: 'public', 
-              table: 'notifications',
-              filter: `user_id=eq.${currentUser.id}`
-          }, () => {
-              loadNotifications()
-          })
-         .subscribe()
-         
-        notifBtn.onclick = (e) => {
-            e.stopPropagation()
-            notifDropdown.classList.toggle('hidden')
-        }
-        
-        // Close dropdown when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) {
-                notifDropdown.classList.add('hidden')
-            }
-        })
-        
-    } else {
-        userEmail.textContent = ''
-        loginBtn.classList.remove('hidden')
-        logoutBtn.classList.add('hidden')
-        postForm.classList.add('hidden')
-        notifBtn.classList.add('hidden')
-    }
-}
-
-async function loadNotifications() {
-    if (!currentUser) return
-    
-    const { data: notifs, error } = await supabase
-       .from('notifications')
-       .select('*')
-       .eq('user_id', currentUser.id)
-       .order('created_at', { ascending: false })
-       .limit(10)
-    
-    if (error) {
-        console.error('Notification error:', error.message)
-        return
-    }
-    
-    // Removed the alert() calls - no more popups
-    
-    const unread = notifs.filter(n => !n.is_read).length
-    if (unread > 0) {
-        notifCount.textContent = unread
-        notifCount.classList.remove('hidden')
-    } else {
-        notifCount.textContent = ''
-        notifCount.classList.add('hidden')
-    }
-    
-    notifDropdown.innerHTML = notifs.length ? notifs.map(n => `
-        <div class="notif-item ${n.is_read ? '' : 'unread'}" data-id="${n.id}">
-            ${n.message}<br>
-            <small>${new Date(n.created_at).toLocaleString()}</small>
-        </div>
-    `).join('') : '<div class="notif-item">No notifications</div>'
-    
-    document.querySelectorAll('.notif-item[data-id]').forEach(item => {
-        item.onclick = async (e) => {
-            e.stopPropagation()
-            const id = item.dataset.id
-            await supabase.from('notifications').update({ is_read: true }).eq('id', id)
-            await loadNotifications()
-        }
-    })
-}
 
 postBtn.onclick = async () => {
     if (!currentUser || !title.value || !content.value) {
@@ -192,7 +92,7 @@ async function loadArticles() {
         return `
         <div class="article" data-id="${article.id}">
             <div class="article-header">
-                <h3>${article.title}</h3>
+                <h3><a href="./article.html?id=${article.id}">${article.title}</a></h3>
                 ${isOwner ? `
                 <div class="owner-actions">
                     <button class="editBtn" data-id="${article.id}">Edit</button>
@@ -212,6 +112,7 @@ async function loadArticles() {
                 <button class="likeCountBtn" data-id="${article.id}" ${likeCount === 0 ? 'disabled' : ''}>
                     ${likeCount} ${likeCount === 1 ? 'like' : 'likes'}
                 </button>
+                <a href="./article.html?id=${article.id}" class="viewBtn">View</a>
             </div>
             
             <div class="comments">
@@ -365,7 +266,7 @@ async function postComment(articleId) {
 function editArticle(articleId) {
     const contentDiv = document.querySelector(`.article-content[data-id="${articleId}"]`)
     const currentContent = contentDiv.querySelector('p').innerText
-    const currentTitle = contentDiv.parentElement.querySelector('h3').innerText
+    const currentTitle = contentDiv.parentElement.querySelector('h3 a').innerText
     
     contentDiv.innerHTML = `
         <input type="text" class="editTitle" value="${currentTitle}" style="width:100%;margin-bottom:10px;padding:8px;">
@@ -442,6 +343,3 @@ async function deleteComment(commentId) {
     if (error) alert(error.message)
     else loadArticles()
 }
-
-loginBtn.onclick = () => window.location.href = './login.html'
-logoutBtn.onclick = async () => await supabase.auth.signOut()
