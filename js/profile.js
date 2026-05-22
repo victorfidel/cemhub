@@ -18,7 +18,7 @@ async function init() {
     currentUser = session?.user || null
     
     if (!profileId) {
-        profileContent.innerHTML = '<p>No user specified</p>'
+        profileContent.innerHTML = '<p>No user specified. Add ?id=YOUR_USER_ID to the URL</p>'
         return
     }
     
@@ -26,13 +26,20 @@ async function init() {
 }
 
 async function loadProfile() {
-    const { data: profile, error } = await supabase
-     .from('profiles')
-     .select('id, username, bio, avatar_url')
-     .eq('id', profileId)
-     .single()
+    profileContent.innerHTML = 'Loading profile...'
     
-    if (error ||!profile) {
+    const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('id, username, bio, avatar_url')
+    .eq('id', profileId)
+    .single()
+    
+    if (error) {
+        profileContent.innerHTML = `<p>Error loading profile: ${error.message}</p>`
+        return
+    }
+    
+    if (!profile) {
         profileContent.innerHTML = '<p>User not found</p>'
         return
     }
@@ -74,7 +81,7 @@ async function loadProfile() {
 
 function toggleEdit(editing) {
     document.getElementById('viewMode').classList.toggle('hidden', editing)
-    document.getElementById('editMode').classList.toggle('hidden',!editing)
+    document.getElementById('editMode').classList.toggle('hidden', !editing)
     editBtn.classList.toggle('hidden', editing)
 }
 
@@ -130,4 +137,4 @@ async function saveProfile() {
             loadProfile()
         }, 1000)
     }
-        }
+}
