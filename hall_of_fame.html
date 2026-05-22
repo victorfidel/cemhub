@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CEM Hub - Hall of Fame</title>
+  <link rel="stylesheet" href="./CSS/style.css">
+</head>
+<body>
+  <main>
+    <article>
+      <h1>Hall of Fame</h1>
+      <div class="article-meta">Recognizing our top contributors</div>
+      <div class="article-body">
+        <p>These are the amazing people who have supported CEM Hub.</p>
+        
+        <h2>Top Donors</h2>
+        <ul id="donorList">
+          <li>Coming soon...</li>
+        </ul>
+
+        <h2>Top Contributors</h2>
+        <ul id="contributorList">
+          <li>Coming soon...</li>
+        </ul>
+      </div>
+    </article>
+  </main>
+
+  <script type="module">
+    import { initLayout } from './js/layout.js'
+    await initLayout()
+    
+    // Later you can load this from Supabase
+    // const { data: donors } = await supabase.from('donors').select('*')
+  </script>
+</body>
+</html>
