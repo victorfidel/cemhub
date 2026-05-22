@@ -33,31 +33,12 @@
         }
 
         async function loadArticles() {
-            // Get articles + like counts + comment counts + check if current user liked
+            // 1. Get all articles
             const { data: articles, error } = await supabase
-             .from('articles')
-             .select(`
-                *,
-                likes(count),
-                likes!inner(user_id),
-                comments(count)
-             `)
-             .order('created_at', { ascending: false })
+              .from('articles')
+              .select('*')
+              .order('created_at', { ascending: false })
 
-            if (error) {
-                // Fallback if the join fails due to RLS
-                const { data: fallbackArticles } = await supabase
-                  .from('articles')
-                  .select('*')
-                  .order('created_at', { ascending: false })
-                
-                renderArticles(fallbackArticles, error)
-                return
-            }
-            renderArticles(articles)
-        }
-
-        async function renderArticles(articles, error = null) {
             if (error) {
                 articlesDiv.innerHTML = `<p>Error loading articles: ${error.message}</p>`
                 return
@@ -67,22 +48,32 @@
                 return
             }
 
-            // Get all likes by current user to check "liked" state
-            let userLikes = []
-            if (user) {
-                const { data } = await supabase
-                  .from('likes')
-                  .select('article_id')
-                  .eq('user_id', user.id)
-                userLikes = data?.map(l => l.article_id) || []
-            }
+            // 2. Get all likes
+            const { data: likes } = await supabase
+              .from('likes')
+              .select('article_id, user_id')
 
-            articlesDiv.innerHTML = articles.map(article => {
-                const likeCount = article.likes?.[0]?.count || 0
-                const commentCount = article.comments?.[0]?.count || 0
+            // 3. Get all comment counts
+            const { data: comments } = await supabase
+              .from('comments')
+              .select('article_id')
+
+            // 4. Map counts to each article
+            const userLikes = user ? likes?.filter(l => l.user_id === user.id).map(l => l.article_id) : []
+            
+            const articlesWithCounts = articles.map(article => {
+                const likeCount = likes?.filter(l => l.article_id === article.id).length || 0
+                const commentCount = comments?.filter(c => c.article_id === article.id).length || 0
                 const isLiked = userLikes.includes(article.id)
+                
+                return { ...article, likeCount, commentCount, isLiked }
+            })
 
-                return `
+            renderArticles(articlesWithCounts)
+        }
+
+        function renderArticles(articles) {
+            articlesDiv.innerHTML = articles.map(article => `
                 <article class="article" data-id="${article.id}">
                     <h3><a href="article.html?id=${article.id}">${article.title}</a></h3>
                     <div class="meta">
@@ -91,28 +82,30 @@
                     </div>
                     <p>${article.content.substring(0, 150)}...</p>
                     <div class="actions">
-                        <button class="likeBtn ${isLiked ? 'liked' : ''}" data-id="${article.id}">
-                            ${isLiked ? '❤️' : '🤍'} ${likeCount}
+                        <button class="likeBtn ${article.isLiked ? 'liked' : ''}" data-id="${article.id}">
+                            ${article.isLiked ? '❤️' : '🤍'} ${article.likeCount}
                         </button>
-                        <a href="article.html?id=${article.id}#comments">💬 ${commentCount}</a>
+                        <a href="article.html?id=${article.id}#comments">💬 ${article.commentCount}</a>
                         ${user && user.id === article.user_id? `
                             <button class="editBtn" data-id="${article.id}">Edit</button>
                             <button class="deleteBtn" data-id="${article.id}">Delete</button>
                         ` : ''}
                     </div>
                 </article>
-            `}).join('')
+            `).join('')
         }
 
         await loadArticles()
 
         // Handle clicks
         articlesDiv.addEventListener('click', async (e) => {
-            const id = e.target.closest('[data-id]')?.dataset.id
+            const btn = e.target.closest('button')
+            if (!btn) return
+            const id = btn.dataset.id
             if (!id) return
 
             // DELETE
-            if (e.target.classList.contains('deleteBtn')) {
+            if (btn.classList.contains('deleteBtn')) {
                 if (!confirm('Delete this article? This cannot be undone.')) return
                 const { error } = await supabase.from('articles').delete().eq('id', id)
                 if (error) alert(`Error: ${error.message}`)
@@ -120,18 +113,18 @@
             }
 
             // EDIT
-            if (e.target.classList.contains('editBtn')) {
+            if (btn.classList.contains('editBtn')) {
                 window.location.href = `edit.html?id=${id}`
             }
 
             // LIKE / UNLIKE
-            if (e.target.classList.contains('likeBtn')) {
+            if (btn.classList.contains('likeBtn')) {
                 if (!user) {
                     alert('Log in to like articles')
                     return
                 }
 
-                const isLiked = e.target.classList.contains('liked')
+                const isLiked = btn.classList.contains('liked')
                 
                 if (isLiked) {
                     await supabase.from('likes').delete()
@@ -179,7 +172,15 @@
     </script>
     <style>
         .likeBtn.liked { color: #e0245e; }
-        .actions button, .actions a { margin-right: 12px; }
+        .actions button, .actions a { 
+            margin-right: 12px; 
+            background: none;
+            border: 1px solid #ddd;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .actions button:hover { background: #f5f5f5; }
     </style>
 </body>
-        </html>
+</html>
