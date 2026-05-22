@@ -258,6 +258,7 @@ textarea { height: 120px; resize: vertical; }
   font-size: 1.25rem;
   line-height: 1;
   border-radius: var(--radius);
+  order: -1; /* Ensures it stays first in flex */
 }
 
 .hamburger:hover {
@@ -266,15 +267,15 @@ textarea { height: 120px; resize: vertical; }
 
 .nav-menu {
   position: absolute;
-  top: 100%;
-  left: 1rem;
+  top: calc(100% + 8px); /* 8px gap from header */
+  left: 0;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.15);
   padding: 0.5rem 0;
-  min-width: 200px;
-  z-index: 100;
+  min-width: 220px;
+  z-index: 1000; /* Higher z-index fixes overlap */
 }
 
 .nav-menu a {
@@ -293,10 +294,10 @@ textarea { height: 120px; resize: vertical; }
 
 .nav-left {
   position: relative;
+  gap: 1rem; /* Add space between ☰ and logo */
 }
 
-/* Mobile: always show hamburger, hide email */
-@media (max-width: 768px) {
-  #userEmail { display: none; }
-  .nav-right { gap: 0.5rem; }
+/* Make sure header stays on top of everything */
+#siteHeader {
+  z-index: 50;
 }
