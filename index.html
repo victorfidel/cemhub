@@ -4,10 +4,18 @@
     <title>CEM Hub</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="./CSS/style.css">
+    <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
-    <main id="blogList">
+    <main>
+        <div id="postForm" class="hidden">
+            <h2>New Post</h2>
+            <input type="text" id="title" placeholder="Article title">
+            <textarea id="content" placeholder="Write your article..."></textarea>
+            <button id="publishBtn">Publish Article</button>
+            <div id="msg"></div>
+        </div>
+
         <h1>Latest Articles</h1>
         <div id="articles">Loading...</div>
     </main>
@@ -16,14 +24,20 @@
         import { supabase } from './js/supabase.js'
         import { initLayout } from './js/layout.js'
         
-        await initLayout()
+        const user = await initLayout()
+        const postForm = document.getElementById('postForm')
+        const articlesDiv = document.getElementById('articles')
         
+        // Only show post form if logged in
+        if (user) {
+            postForm.classList.remove('hidden')
+        }
+        
+        // Load articles
         const { data: articles, error } = await supabase
             .from('articles')
             .select('*')
             .order('created_at', { ascending: false })
-        
-        const articlesDiv = document.getElementById('articles')
         
         if (error) {
             articlesDiv.innerHTML = `<p>Error loading articles: ${error.message}</p>`
@@ -40,10 +54,40 @@
                     <p>${article.content.substring(0, 150)}...</p>
                     <div class="actions">
                         <a href="article.html?id=${article.id}">Read more →</a>
+                        ${user && user.id === article.user_id ? `
+                            <button class="editBtn" data-id="${article.id}">Edit</button>
+                            <button class="deleteBtn" data-id="${article.id}">Delete</button>
+                        ` : ''}
                     </div>
                 </article>
             `).join('')
         }
+        
+        // Publish new article
+        document.getElementById('publishBtn')?.addEventListener('click', async () => {
+            const title = document.getElementById('title').value
+            const content = document.getElementById('content').value
+            const msg = document.getElementById('msg')
+            
+            if (!title || !content) {
+                msg.textContent = 'Title and content required'
+                return
+            }
+            
+            const { error } = await supabase.from('articles').insert({
+                title,
+                content,
+                user_id: user.id,
+                author: user.email
+            })
+            
+            if (error) {
+                msg.textContent = `Error: ${error.message}`
+            } else {
+                msg.textContent = 'Published!'
+                setTimeout(() => location.reload(), 1000)
+            }
+        })
     </script>
 </body>
 </html>
