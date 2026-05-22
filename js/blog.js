@@ -10,6 +10,11 @@ const content = document.getElementById('content')
 const msg = document.getElementById('msg')
 const articlesDiv = document.getElementById('articles')
 
+// Notification elements
+const notifBtn = document.getElementById('notifBtn')
+const notifCount = document.getElementById('notifCount')
+const notifDropdown = document.getElementById('notifDropdown')
+
 let currentUser = null
 
 checkUser()
@@ -30,16 +35,70 @@ async function checkUser() {
         loginBtn.classList.add('hidden')
         logoutBtn.classList.remove('hidden')
         postForm.classList.remove('hidden')
+        
+        // Notifications
+        notifBtn.classList.remove('hidden')
+        loadNotifications()
+        
+        // Real-time notification updates
+        supabase.channel('notifications')
+         .on('postgres_changes', { 
+              event: 'INSERT', 
+              schema: 'public', 
+              table: 'notifications',
+              filter: `user_id=eq.${currentUser.id}`
+          }, payload => {
+              loadNotifications()
+          })
+         .subscribe()
+         
+        notifBtn.onclick = () => {
+            notifDropdown.classList.toggle('hidden')
+        }
+        
     } else {
         userEmail.textContent = ''
         loginBtn.classList.remove('hidden')
         logoutBtn.classList.add('hidden')
         postForm.classList.add('hidden')
+        notifBtn.classList.add('hidden')
     }
 }
 
+async function loadNotifications() {
+    if (!currentUser) return
+    
+    const { data: notifs } = await supabase
+       .from('notifications')
+       .select('*')
+       .eq('user_id', currentUser.id)
+       .order('created_at', { ascending: false })
+       .limit(10)
+    
+    const unread = notifs.filter(n => !n.is_read).length
+    notifCount.textContent = unread > 0 ? unread : ''
+    notifCount.style.display = unread > 0 ? 'inline' : 'none'
+    
+    notifDropdown.innerHTML = notifs.length ? notifs.map(n => `
+        <div class="notif-item ${n.is_read ? '' : 'unread'}" data-id="${n.id}" data-related="${n.related_id}">
+            ${n.message}<br>
+            <small>${new Date(n.created_at).toLocaleString()}</small>
+        </div>
+    `).join('') : '<div class="notif-item">No notifications</div>'
+    
+    // Mark as read on click
+    document.querySelectorAll('.notif-item').forEach(item => {
+        item.onclick = async () => {
+            const id = item.dataset.id
+            await supabase.from('notifications').update({ is_read: true }).eq('id', id)
+            loadNotifications()
+            notifDropdown.classList.add('hidden')
+        }
+    })
+}
+
 postBtn.onclick = async () => {
-    if (!currentUser ||!title.value ||!content.value) {
+    if (!currentUser || !title.value || !content.value) {
         msg.style.color = 'red'
         msg.textContent = 'Title and content required'
         return
@@ -97,7 +156,7 @@ async function loadArticles() {
     
     articlesDiv.innerHTML = articles.map(article => {
         const likeCount = article.likes.length
-        const userLiked = currentUser? article.likes.some(l => l.user_id === currentUser.id) : false
+        const userLiked = currentUser ? article.likes.some(l => l.user_id === currentUser.id) : false
         const comments = article.comments.sort((a,b) => new Date(a.created_at) - new Date(b.created_at))
         const isOwner = currentUser && currentUser.id === article.author_id
         const username = article.profiles?.username || 'Anonymous'
@@ -108,7 +167,7 @@ async function loadArticles() {
         <div class="article" data-id="${article.id}">
             <div class="article-header">
                 <h3>${article.title}</h3>
-                ${isOwner? `
+                ${isOwner ? `
                 <div class="owner-actions">
                     <button class="editBtn" data-id="${article.id}">Edit</button>
                     <button class="deleteBtn" data-id="${article.id}">Delete</button>
@@ -121,11 +180,11 @@ async function loadArticles() {
             <div class="meta">By ${authorLink} • Posted ${new Date(article.created_at).toLocaleString()}</div>
             
             <div class="actions">
-                <button class="likeBtn" data-id="${article.id}" ${!currentUser? 'disabled' : ''}>
-                    ${userLiked? '❤️' : '🤍'} 
+                <button class="likeBtn" data-id="${article.id}" ${!currentUser ? 'disabled' : ''}>
+                    ${userLiked ? '❤️' : '🤍'} 
                 </button>
-                <button class="likeCountBtn" data-id="${article.id}" ${likeCount === 0? 'disabled' : ''}>
-                    ${likeCount} ${likeCount === 1? 'like' : 'likes'}
+                <button class="likeCountBtn" data-id="${article.id}" ${likeCount === 0 ? 'disabled' : ''}>
+                    ${likeCount} ${likeCount === 1 ? 'like' : 'likes'}
                 </button>
             </div>
             
@@ -144,7 +203,7 @@ async function loadArticles() {
                             </div>
                             <div class="comment-footer">
                                 <span class="meta">${commentUserLink} • ${new Date(c.created_at).toLocaleTimeString()}</span>
-                                ${isCommentOwner? `
+                                ${isCommentOwner ? `
                                 <div class="owner-actions">
                                     <button class="editCommentBtn" data-id="${c.id}">Edit</button>
                                     <button class="deleteCommentBtn" data-id="${c.id}">Delete</button>
@@ -155,7 +214,7 @@ async function loadArticles() {
                         `
                     }).join('')}
                 </div>
-                ${currentUser? `
+                ${currentUser ? `
                 <div class="comment-form">
                     <input type="text" class="commentInput" placeholder="Add a comment..." data-id="${article.id}">
                     <button class="commentBtn" data-id="${article.id}">Post</button>
