@@ -7,25 +7,24 @@ const userEmail = document.getElementById('userEmail')
 const loginBtn = document.getElementById('loginBtn')
 const logoutBtn = document.getElementById('logoutBtn')
 const profileUsername = document.getElementById('profileUsername')
+const profileBio = document.getElementById('profileBio')
+const editProfileBtn = document.getElementById('editProfileBtn')
+const editProfileForm = document.getElementById('editProfileForm')
+const editUsername = document.getElementById('editUsername')
+const editBio = document.getElementById('editBio')
+const saveProfileBtn = document.getElementById('saveProfileBtn')
+const cancelProfileBtn = document.getElementById('cancelProfileBtn')
+const userArticles = document.getElementById('userArticles')
 
-console.log('1. Script started')
+let currentUser = null
 
-loginBtn.onclick = () => {
-    console.log('Login clicked')
-    window.location.href = './login.html'
-}
+init()
 
-logoutBtn.onclick = async () => {
-    console.log('Logout clicked')
-    await supabase.auth.signOut()
-    console.log('Signed out')
-}
+supabase.auth.onAuthStateChange(() => init())
 
 async function init() {
-    console.log('2. Init running')
     const { data: { session } } = await supabase.auth.getSession()
-    const currentUser = session?.user || null
-    console.log('3. Current user:', currentUser?.email)
+    currentUser = session?.user || null
     
     if (currentUser) {
         userEmail.textContent = currentUser.email
@@ -37,26 +36,51 @@ async function init() {
     }
     
     if (!profileId) {
-        profileUsername.textContent = 'Add ?id=YOUR_UUID to URL'
+        profileUsername.textContent = 'No user ID in URL'
         return
     }
     
-    console.log('4. Loading profile:', profileId)
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('id', profileId)
-      .single()
+    const { data: profile } = await supabase
+     .from('profiles')
+     .select('username, bio')
+     .eq('id', profileId)
+     .single()
     
-    console.log('5. Profile result:', profile, error)
-    
-    if (error) {
-        profileUsername.textContent = 'Error: ' + error.message
-    } else if (profile) {
+    if (profile) {
         profileUsername.textContent = profile.username || 'Anonymous'
+        profileBio.textContent = profile.bio || 'No bio yet'
+        
+        if (currentUser && currentUser.id === profileId) {
+            editProfileBtn.classList.remove('hidden')
+            editProfileBtn.onclick = () => {
+                editProfileForm.classList.remove('hidden')
+                editUsername.value = profile.username || ''
+                editBio.value = profile.bio || ''
+            }
+            saveProfileBtn.onclick = async () => {
+                await supabase.from('profiles').update({
+                    username: editUsername.value,
+                    bio: editBio.value
+                }).eq('id', currentUser.id)
+                editProfileForm.classList.add('hidden')
+                init()
+            }
+            cancelProfileBtn.onclick = () => editProfileForm.classList.add('hidden')
+        }
     } else {
-        profileUsername.textContent = 'Not found'
+        profileUsername.textContent = 'User not found'
     }
+    
+    const { data: articles } = await supabase
+     .from('articles')
+     .select('title, content, created_at')
+     .eq('author_id', profileId)
+     .order('created_at', { ascending: false })
+    
+    userArticles.innerHTML = articles?.length 
+     ? articles.map(a => `<div class="article"><h3>${a.title}</h3><p>${a.content}</p></div>`).join('')
+        : '<p>No posts yet</p>'
 }
 
-init()
+loginBtn.onclick = () => window.location.href = './login.html'
+logoutBtn.onclick = async () => await supabase.auth.signOut()
