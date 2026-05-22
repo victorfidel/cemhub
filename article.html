@@ -13,10 +13,10 @@
         try {
             debug.innerHTML += '1. Script started<br>'
             
-            const { supabase } = await import('./supabase.js')
+            const { supabase } = await import('./js/supabase.js')
             debug.innerHTML += '2. Supabase imported<br>'
             
-            const { initLayout } = await import('./layout.js')
+            const { initLayout } = await import('./js/layout.js')
             debug.innerHTML += '3. Layout imported<br>'
             
             const user = await initLayout()
