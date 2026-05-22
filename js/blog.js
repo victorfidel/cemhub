@@ -76,14 +76,14 @@ async function loadArticles() {
     articlesDiv.innerHTML = 'Loading...'
     
     const { data: articles, error } = await supabase
-       .from('articles')
-       .select(`
+     .from('articles')
+     .select(`
             id, title, content, created_at, author_id,
             profiles ( username, avatar_url ),
             likes(id, user_id, profiles ( username, avatar_url )),
             comments(id, content, created_at, user_id, profiles ( username, avatar_url ))
         `)
-       .order('created_at', { ascending: false })
+     .order('created_at', { ascending: false })
     
     if (error) {
         articlesDiv.innerHTML = `Error: ${error.message}`
@@ -198,11 +198,11 @@ async function toggleLike(articleId) {
     if (!currentUser) return
     
     const { data: existing } = await supabase
-       .from('likes')
-       .select('id')
-       .eq('article_id', articleId)
-       .eq('user_id', currentUser.id)
-       .single()
+     .from('likes')
+     .select('id')
+     .eq('article_id', articleId)
+     .eq('user_id', currentUser.id)
+     .single()
     
     if (existing) {
         await supabase.from('likes').delete().eq('id', existing.id)
@@ -214,10 +214,10 @@ async function toggleLike(articleId) {
 
 async function showLikes(articleId) {
     const { data: likes } = await supabase
-       .from('likes')
-       .select('user_id, profiles ( username, avatar_url )')
-       .eq('article_id', articleId)
-       .order('created_at', { ascending: false })
+     .from('likes')
+     .select('user_id, profiles ( username, avatar_url )')
+     .eq('article_id', articleId)
+     .order('created_at', { ascending: false })
     
     const modal = document.getElementById('likeModal')
     const list = document.getElementById('likeList')
@@ -236,6 +236,7 @@ async function showLikes(articleId) {
 }
 
 function createLikeModal() {
+    if (document.getElementById('likeModal')) return
     const modal = document.createElement('div')
     modal.id = 'likeModal'
     modal.className = 'hidden'
@@ -294,9 +295,9 @@ function editArticle(articleId) {
         const newContent = contentDiv.querySelector('.editContent').value
         
         const { error } = await supabase
-           .from('articles')
-           .update({ title: newTitle, content: newContent })
-           .eq('id', articleId)
+         .from('articles')
+         .update({ title: newTitle, content: newContent })
+         .eq('id', articleId)
         
         if (error) alert(error.message)
         else loadArticles()
@@ -309,9 +310,9 @@ async function deleteArticle(articleId) {
     if (!confirm('Delete this article? This cannot be undone.')) return
     
     const { error } = await supabase
-       .from('articles')
-       .delete()
-       .eq('id', articleId)
+     .from('articles')
+     .delete()
+     .eq('id', articleId)
     
     if (error) alert(error.message)
     else loadArticles()
@@ -333,9 +334,9 @@ function editComment(commentId) {
         const newContent = contentDiv.querySelector('.editCommentInput').value
         
         const { error } = await supabase
-           .from('comments')
-           .update({ content: newContent })
-           .eq('id', commentId)
+         .from('comments')
+         .update({ content: newContent })
+         .eq('id', commentId)
         
         if (error) alert(error.message)
         else loadArticles()
@@ -348,9 +349,9 @@ async function deleteComment(commentId) {
     if (!confirm('Delete this comment?')) return
     
     const { error } = await supabase
-       .from('comments')
-       .delete()
-       .eq('id', commentId)
+     .from('comments')
+     .delete()
+     .eq('id', commentId)
     
     if (error) alert(error.message)
     else loadArticles()
