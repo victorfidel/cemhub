@@ -7,14 +7,16 @@
     <link rel="stylesheet" href="./CSS/style.css">
 </head>
 <body>
-    <header>
-        <h1><a href="./index.html">CEM Hub</a></h1>
-        <nav>
-            <span id="userEmail"></span>
-            <button id="loginBtn">Login</button>
-            <button id="logoutBtn" class="hidden">Logout</button>
-        </nav>
-    </header>
+   <header>
+    <h1><a href="./index.html">CEM Hub</a></h1>
+    <nav>
+        <button id="notifBtn" class="hidden">🔔 <span id="notifCount"></span></button>
+        <span id="userEmail"></span>
+        <button id="loginBtn">Login</button>
+        <button id="logoutBtn" class="hidden">Logout</button>
+    </nav>
+</header>
+<div id="notifDropdown" class="hidden"></div>
 
     <main>
         <div id="profileHeader" class="profile-header">
