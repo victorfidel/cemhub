@@ -71,6 +71,7 @@ async function loadArticles() {
         .from('articles')
         .select(`
             id, title, content, created_at, author_id,
+            profiles ( username ),
             likes(id, user_id),
             comments(id, content, created_at, user_id)
         `)
@@ -91,6 +92,8 @@ async function loadArticles() {
         const userLiked = currentUser ? article.likes.some(l => l.user_id === currentUser.id) : false
         const comments = article.comments.sort((a,b) => new Date(a.created_at) - new Date(b.created_at))
         const isOwner = currentUser && currentUser.id === article.author_id
+        const username = article.profiles?.username || 'Anonymous'
+        const authorLink = `<a href="./profile.html?id=${article.author_id}">${username}</a>`
         
         return `
         <div class="article" data-id="${article.id}">
@@ -106,7 +109,7 @@ async function loadArticles() {
             <div class="article-content" data-id="${article.id}">
                 <p>${article.content.replace(/\n/g, '<br>')}</p>
             </div>
-            <div class="meta">Posted ${new Date(article.created_at).toLocaleString()}</div>
+            <div class="meta">By ${authorLink} • Posted ${new Date(article.created_at).toLocaleString()}</div>
             
             <div class="actions">
                 <button class="likeBtn" data-id="${article.id}" ${!currentUser ? 'disabled' : ''}>
