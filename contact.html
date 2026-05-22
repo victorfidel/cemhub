@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CEM Hub - Contact</title>
+  <link rel="stylesheet" href="./CSS/style.css">
+</head>
+<body>
+  <main>
+    <article>
+      <h1>Contact Us</h1>
+      <div class="article-meta">We'd love to hear from you</div>
+      <div class="article-body">
+        <p>Have questions, feedback, or want to collaborate? Reach out.</p>
+        
+        <h2>Email</h2>
+        <p><a href="mailto:hello@cemhub.com">hello@cemhub.com</a></p>
+        
+        <h2>Social Media</h2>
+        <p>
+          <a href="https://twitter.com/yourhandle" target="_blank">Twitter</a> | 
+          <a href="https://instagram.com/yourhandle" target="_blank">Instagram</a>
+        </p>
+
+        <h2>Send a Message</h2>
+        <form id="contactForm">
+          <input type="text" id="name" placeholder="Your Name" required>
+          <input type="email" id="email" placeholder="Your Email" required>
+          <textarea id="message" placeholder="Your Message" required></textarea>
+          <button type="submit">Send Message</button>
+          <p id="formMsg"></p>
+        </form>
+      </div>
+    </article>
+  </main>
+
+  <script type="module">
+    import { initLayout } from './js/layout.js'
+    await initLayout()
+    
+    // Basic form handler - replace with Supabase or Formspree later
+    document.getElementById('contactForm').onsubmit = async (e) => {
+      e.preventDefault()
+      document.getElementById('formMsg').textContent = 'Form not connected yet. Email us directly for now.'
+    }
+  </script>
+</body>
+</html>
