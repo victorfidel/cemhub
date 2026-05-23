@@ -336,8 +336,7 @@ textarea { height: 120px; resize: vertical; }
     display: flex;
     gap: 8px;
     margin: 24px 0;
-    overflow-x: auto;
-    padding-bottom: 8px;
+    flex-wrap: wrap;
 }
 
 .filter-btn {
@@ -347,10 +346,10 @@ textarea { height: 120px; resize: vertical; }
     color: var(--text);
     border-radius: 20px;
     cursor: pointer;
-    white-space: nowrap;
     font-size: 0.875rem;
     font-weight: 500;
     transition: all 0.2s;
+    text-transform: capitalize;
 }
 
 .filter-btn:hover {
@@ -363,7 +362,7 @@ textarea { height: 120px; resize: vertical; }
     border-color: var(--primary);
 }
 
-/* Article Card - matches your .article class */
+/* Article Card - SINGLE CLEAN VERSION */
 .article {
     background: var(--card);
     border: 1px solid var(--border);
@@ -373,9 +372,16 @@ textarea { height: 120px; resize: vertical; }
     box-shadow: var(--shadow);
 }
 
-.article-cover {
+.article-cover-wrapper {
+    display: block;
     width: 100%;
     height: 220px;
+    overflow: hidden;
+}
+
+.article-cover {
+    width: 100%;
+    height: 100%;
     object-fit: cover;
     display: block;
 }
@@ -746,7 +752,6 @@ input[type="file"] {
 @media (max-width: 768px) {
     #userEmail { display: none; }
     main { margin: 1rem auto; }
-    article { padding: 1.5rem; }
     #notifDropdown { width: calc(100vw - 2rem); right: 1rem; }
     
     .article-hero {
