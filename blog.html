@@ -32,7 +32,7 @@
     let allArticles = []
 
     function showError(msg) {
-        articlesDiv.innerHTML = `<div style="color:red; padding:20px; border:1px solid red; background:#ffeeee;">
+        articlesDiv.innerHTML = `<div style="color:red; padding:20px; border:1px solid red; background:#ffeeee; border-radius:8px;">
             <strong>Error:</strong> ${msg}
         </div>`
     }
@@ -42,90 +42,143 @@
     }
 
     async function loadCategories() {
-    const { data: articles } = await supabase
-    .from('articles')
-    .select('category')
-    
-    if (!articles) return
-    
-    // Normalize: lowercase, trim, remove duplicates
-    const categories = [...new Set(
-        articles
-        .map(a => a.category?.trim())
-        .filter(Boolean)
-        .map(c => c.toLowerCase())
-    )]
-    
-    categories.forEach(cat => {
-        const btn = document.createElement('button')
-        btn.className = 'filter-btn'
-        btn.dataset.category = cat
-        btn.textContent = cat.charAt(0).toUpperCase() + cat.slice(1) // Capitalize first letter
-        categoryFilter.appendChild(btn)
-    })
-
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'))
-            btn.classList.add('active')
-            currentCategory = btn.dataset.category
-            filterArticles()
+        const { data: articles, error } = await supabase
+            .from('articles')
+            .select('category')
+        
+        if (error) {
+            console.log('Category load error:', error)
+            return
+        }
+        
+        if (!articles) return
+        
+        const categories = [...new Set(
+            articles
+            .map(a => a.category?.trim())
+            .filter(Boolean)
+            .map(c => c.toLowerCase())
+        )]
+        
+        categories.forEach(cat => {
+            const btn = document.createElement('button')
+            btn.className = 'filter-btn'
+            btn.dataset.category = cat
+            btn.textContent = cat.charAt(0).toUpperCase() + cat.slice(1)
+            categoryFilter.appendChild(btn)
         })
-    })
-}
 
-function filterArticles() {
-    const filtered = currentCategory === 'all' 
-        ? allArticles 
-        : allArticles.filter(a => a.category?.toLowerCase().trim() === currentCategory)
-    renderArticles(filtered)
-}
-
-function renderArticles(articles) {
-    if (articles.length === 0) {
-        articlesDiv.innerHTML = `<p>No articles in ${currentCategory === 'all'? 'any category' : currentCategory} yet.</p>`
-        return
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'))
+                btn.classList.add('active')
+                currentCategory = btn.dataset.category
+                filterArticles()
+            })
+        })
     }
 
-    articlesDiv.innerHTML = articles.map(article => `
-        <article class="article" data-id="${article.id}">
-            ${article.cover_image_url? `
-                <a href="article.html?id=${article.id}" class="article-cover-wrapper">
-                    <img src="${article.cover_image_url}" alt="${article.title}" class="article-cover">
-                </a>
-            ` : ''}
-            
-            <div class="article-content">
-                ${article.category? `<span class="category-badge">${article.category}</span>` : ''}
+    function filterArticles() {
+        const filtered = currentCategory === 'all' 
+            ? allArticles 
+            : allArticles.filter(a => a.category?.toLowerCase().trim() === currentCategory)
+        renderArticles(filtered)
+    }
+
+    function renderArticles(articles) {
+        if (articles.length === 0) {
+            articlesDiv.innerHTML = `<p>No articles in ${currentCategory === 'all'? 'any category' : currentCategory} yet.</p>`
+            return
+        }
+
+        articlesDiv.innerHTML = articles.map(article => `
+            <article class="article" data-id="${article.id}">
+                ${article.cover_image_url? `
+                    <a href="article.html?id=${article.id}" class="article-cover-wrapper">
+                        <img src="${article.cover_image_url}" alt="${article.title}" class="article-cover">
+                    </a>
+                ` : ''}
                 
-                <h3><a href="article.html?id=${article.id}">${article.title}</a></h3>
-                
-                <div class="meta">
-                    By <a href="profile.html?user=${article.author_id}">${article.author_name || article.author_email || 'Anonymous'}</a> • 
-                    Posted ${new Date(article.created_at).toLocaleDateString()}
-                </div>
-                
-                <p>${article.excerpt || article.content.substring(0, 150)}...</p>
-                
-                <div class="actions">
-                    <button class="action-btn likeBtn ${article.isLiked? 'liked' : ''}" data-id="${article.id}">
-                        ${article.isLiked? '❤️' : '🤍'} ${article.likeCount}
-                    </button>
-                    <a class="action-btn" href="article.html?id=${article.id}#comments">💬 ${article.commentCount}</a>
-                    ${user && user.id === article.author_id? `
-                        <a class="action-btn" href="post-article.html?edit=${article.id}">
-                            ✏️ Edit
-                        </a>
-                        <button class="action-btn delete-btn deleteBtn" data-id="${article.id}">
-                            🗑️ Delete
+                <div class="article-content">
+                    ${article.category? `<span class="category-badge">${article.category}</span>` : ''}
+                    
+                    <h3><a href="article.html?id=${article.id}">${article.title}</a></h3>
+                    
+                    <div class="meta">
+                        By <a href="profile.html?user=${article.author_id}">${article.author_name || article.author_email || 'Anonymous'}</a> • 
+                        Posted ${new Date(article.created_at).toLocaleDateString()}
+                    </div>
+                    
+                    <p>${article.excerpt || article.content.substring(0, 150)}...</p>
+                    
+                    <div class="actions">
+                        <button class="action-btn likeBtn ${article.isLiked? 'liked' : ''}" data-id="${article.id}">
+                            ${article.isLiked? '❤️' : '🤍'} ${article.likeCount}
                         </button>
-                    ` : ''}
+                        <a class="action-btn" href="article.html?id=${article.id}#comments">💬 ${article.commentCount}</a>
+                        ${user && user.id === article.author_id? `
+                            <a class="action-btn" href="post-article.html?edit=${article.id}">
+                                ✏️ Edit
+                            </a>
+                            <button class="action-btn delete-btn deleteBtn" data-id="${article.id}">
+                                🗑️ Delete
+                            </button>
+                        ` : ''}
+                    </div>
                 </div>
-            </div>
-        </article>
-    `).join('')
-                }
-    
+            </article>
+        `).join('')
+    }
+
+    async function loadArticles() {
+        try {
+            const { data: articles, error: articlesError } = await supabase
+                .from('articles')
+                .select('*')
+                .order('created_at', { ascending: false })
+
+            if (articlesError) {
+                showError(`Articles table: ${articlesError.message}`)
+                return
+            }
+            
+            if (!articles || articles.length === 0) {
+                articlesDiv.innerHTML = '<p>No articles yet.</p>'
+                return
+            }
+
+            const { data: likes, error: likesError } = await supabase
+                .from('likes')
+                .select('article_id, user_id')
+            
+            if (likesError) {
+                showError(`Likes table: ${likesError.message}`)
+                return
+            }
+
+            const { data: comments, error: commentsError } = await supabase
+                .from('comments')
+                .select('article_id')
+
+            if (commentsError) {
+                showError(`Comments table: ${commentsError.message}`)
+                return
+            }
+
+            const userLikes = user && likes? likes.filter(l => l.user_id === user.id).map(l => l.article_id) : []
+            
+            allArticles = articles.map(article => {
+                const likeCount = likes?.filter(l => l.article_id === article.id).length || 0
+                const commentCount = comments?.filter(c => c.article_id === article.id).length || 0
+                const isLiked = userLikes.includes(article.id)
+                return {...article, likeCount, commentCount, isLiked }
+            })
+
+            renderArticles(allArticles)
+        } catch (err) {
+            showError(`JS crashed: ${err.message}`)
+        }
+    }
 
     await loadCategories()
     await loadArticles()
@@ -158,6 +211,6 @@ function renderArticles(articles) {
             else await loadArticles()
         }
     })
-</script>
+    </script>
 </body>
 </html>
