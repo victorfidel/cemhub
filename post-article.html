@@ -38,8 +38,12 @@
             </div>
 
             <div class="form-group">
-                <label>Cover Image URL</label>
-                <input type="url" id="cover_image_url" placeholder="https://example.com/image.jpg">
+                <label>Cover Image</label>
+                <input type="file" id="cover_image" accept="image/*">
+                <div id="imagePreview" class="hidden">
+                    <img id="previewImg" src="" alt="Preview">
+                    <button type="button" id="removeImg">Remove</button>
+                </div>
             </div>
 
             <div class="form-group">
@@ -72,10 +76,15 @@
     const submitBtn = document.getElementById('submitBtn')
     const msg = document.getElementById('msg')
     const cancelBtn = document.getElementById('cancelBtn')
+    const coverImageInput = document.getElementById('cover_image')
+    const imagePreview = document.getElementById('imagePreview')
+    const previewImg = document.getElementById('previewImg')
+    const removeImgBtn = document.getElementById('removeImg')
 
     const urlParams = new URLSearchParams(window.location.search)
     const editId = urlParams.get('edit')
     let isEditing = false
+    let existingImageUrl = null
 
     if (editId) {
         isEditing = true
@@ -84,12 +93,31 @@
         await loadArticle(editId)
     }
 
+    // Image preview
+    coverImageInput.addEventListener('change', (e) => {
+        const file = e.target.files[0]
+        if (file) {
+            const reader = new FileReader()
+            reader.onload = (e) => {
+                previewImg.src = e.target.result
+                imagePreview.classList.remove('hidden')
+            }
+            reader.readAsDataURL(file)
+        }
+    })
+
+    removeImgBtn.addEventListener('click', () => {
+        coverImageInput.value = ''
+        imagePreview.classList.add('hidden')
+        existingImageUrl = null
+    })
+
     async function loadArticle(id) {
         const { data: article, error } = await supabase
-         .from('articles')
-         .select('*')
-         .eq('id', id)
-         .single()
+        .from('articles')
+        .select('*')
+        .eq('id', id)
+        .single()
 
         if (error ||!article) {
             msg.textContent = 'Error: Article not found'
@@ -107,8 +135,30 @@
         document.getElementById('title').value = article.title
         document.getElementById('content').value = article.content
         document.getElementById('category').value = article.category || ''
-        document.getElementById('cover_image_url').value = article.cover_image_url || ''
         document.getElementById('excerpt').value = article.excerpt || ''
+        
+        if (article.cover_image_url) {
+            existingImageUrl = article.cover_image_url
+            previewImg.src = article.cover_image_url
+            imagePreview.classList.remove('hidden')
+        }
+    }
+
+    async function uploadImage(file) {
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${user.id}-${Date.now()}.${fileExt}`
+        
+        const { data, error } = await supabase.storage
+        .from('article-covers')
+        .upload(fileName, file)
+
+        if (error) throw error
+
+        const { data: { publicUrl } } = supabase.storage
+        .from('article-covers')
+        .getPublicUrl(fileName)
+
+        return publicUrl
     }
 
     form.addEventListener('submit', async (e) => {
@@ -117,8 +167,8 @@
         const title = document.getElementById('title').value
         const content = document.getElementById('content').value
         const category = document.getElementById('category').value
-        const cover_image_url = document.getElementById('cover_image_url').value
         const excerpt = document.getElementById('excerpt').value
+        const imageFile = coverImageInput.files[0]
 
         if (!title ||!content ||!category) {
             msg.textContent = 'Title, category, and content are required'
@@ -128,39 +178,51 @@
 
         msg.textContent = 'Saving...'
         msg.style.color = '#333'
+        submitBtn.disabled = true
 
-        const articleData = {
-            title,
-            content,
-            category,
-            cover_image_url: cover_image_url || null,
-            excerpt: excerpt || null,
-            author_id: user.id,
-            author_email: user.email,
-            author_name: user.user_metadata?.full_name || user.email.split('@')[0]
-        }
+        try {
+            let cover_image_url = existingImageUrl
 
-        let error
-        if (isEditing) {
-            ({ error } = await supabase
-             .from('articles')
-             .update(articleData)
-             .eq('id', editId))
-        } else {
-            ({ error } = await supabase
-             .from('articles')
-             .insert(articleData))
-        }
+            if (imageFile) {
+                msg.textContent = 'Uploading image...'
+                cover_image_url = await uploadImage(imageFile)
+            }
 
-        if (error) {
-            msg.textContent = `Error: ${error.message}`
-            msg.style.color = 'red'
-        } else {
+            const articleData = {
+                title,
+                content,
+                category,
+                cover_image_url,
+                excerpt: excerpt || null,
+                author_id: user.id,
+                author_email: user.email,
+                author_name: user.user_metadata?.full_name || user.email.split('@')[0]
+            }
+
+            let error
+            if (isEditing) {
+                ({ error } = await supabase
+                .from('articles')
+                .update(articleData)
+                .eq('id', editId))
+            } else {
+                ({ error } = await supabase
+                .from('articles')
+                .insert(articleData))
+            }
+
+            if (error) throw error
+
             msg.textContent = isEditing? 'Updated!' : 'Published!'
             msg.style.color = 'green'
             setTimeout(() => {
                 window.location.href = 'blog.html'
             }, 1000)
+
+        } catch (error) {
+            msg.textContent = `Error: ${error.message}`
+            msg.style.color = 'red'
+            submitBtn.disabled = false
         }
     })
 
@@ -169,4 +231,4 @@
     })
     </script>
 </body>
-                                                           </html>
+                        </html>
