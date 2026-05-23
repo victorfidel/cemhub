@@ -90,6 +90,7 @@
         showError(`Unexpected: ${err.message}`)
     }
     }
+    
     function renderArticles(articles) {
         articlesDiv.innerHTML = articles.map(article => `
             <article class="article" data-id="${article.id}">
@@ -100,13 +101,17 @@
                 </div>
                 <p>${article.content.substring(0, 150)}...</p>
                 <div class="actions">
-                    <button class="likeBtn ${article.isLiked? 'liked' : ''}" data-id="${article.id}">
+                    <button class="action-btn likeBtn ${article.isLiked? 'liked' : ''}" data-id="${article.id}">
                         ${article.isLiked? '❤️' : '🤍'} ${article.likeCount}
                     </button>
-                    <a href="article.html?id=${article.id}#comments">💬 ${article.commentCount}</a>
-                    ${user && user.id === article.user_id? `
-                        <button class="editBtn" data-id="${article.id}">Edit</button>
-                        <button class="deleteBtn" data-id="${article.id}">Delete</button>
+                    <a class="action-btn" href="article.html?id=${article.id}#comments">💬 ${article.commentCount}</a>
+                    ${user && user.id === article.author_id? `
+                        <a class="action-btn" href="post-article.html?edit=${article.id}">
+                            ✏️ Edit
+                        </a>
+                        <button class="action-btn delete-btn deleteBtn" data-id="${article.id}">
+                            🗑️ Delete
+                        </button>
                     ` : ''}
                 </div>
             </article>
@@ -127,10 +132,6 @@
             const { error } = await supabase.from('articles').delete().eq('id', id)
             if (error) alert(`Error: ${error.message}`)
             else await loadArticles()
-        }
-
-        if (btn.classList.contains('editBtn')) {
-            window.location.href = `edit.html?id=${id}`
         }
 
         if (btn.classList.contains('likeBtn')) {
@@ -179,17 +180,5 @@
         }
     })
 </script>
-    <style>
-        .likeBtn.liked { color: #e0245e; }
-        .actions button, .actions a { 
-            margin-right: 12px; 
-            background: none;
-            border: 1px solid #ddd;
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-        .actions button:hover { background: #f5f5f5; }
-    </style>
 </body>
 </html>
