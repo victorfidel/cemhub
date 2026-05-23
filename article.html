@@ -4,25 +4,51 @@
     <title>Article - CEM Hub</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="./CSS/style.css">
+    <style>
+        .comments { margin-top: 40px; border-top: 1px solid #ddd; padding-top: 20px; }
+        .comment { border-bottom: 1px solid #eee; padding: 15px 0; }
+        .comment-meta { font-size: 0.9em; color: #666; margin-bottom: 5px; }
+        #commentForm { margin: 20px 0; }
+        #commentText { width: 100%; padding: 10px; margin-bottom: 10px; }
+        .deleteCommentBtn { font-size: 0.8em; color: red; background: none; border: none; cursor: pointer; }
+    </style>
 </head>
 <body>
     <main id="articleContent">
         <p>Loading article...</p>
     </main>
+
+    <section id="commentsSection" class="comments">
+        <h3>Comments</h3>
+        <div id="commentForm" class="hidden">
+            <textarea id="commentText" placeholder="Write a comment..." rows="3"></textarea>
+            <button id="postCommentBtn">Post Comment</button>
+            <p id="commentMsg"></p>
+        </div>
+        <div id="commentsList">Loading comments...</div>
+    </section>
     
     <script type="module">
         import { supabase } from './js/supabase.js'
         import { initLayout } from './js/layout.js'
         
         const user = await initLayout()
-        
         const params = new URLSearchParams(window.location.search)
         const articleId = params.get('id')
         const articleContent = document.getElementById('articleContent')
+        const commentsList = document.getElementById('commentsList')
+        const commentForm = document.getElementById('commentForm')
         
         if (!articleId) {
             articleContent.innerHTML = '<h1>Error</h1><p>No article ID provided in URL.</p>'
         } else {
+            loadArticle()
+            loadComments()
+        }
+
+        if (user) commentForm.classList.remove('hidden')
+
+        async function loadArticle() {
             const { data, error } = await supabase
                 .from('articles')
                 .select('*')
@@ -37,15 +63,92 @@
                     <article>
                         <h1>${data.title}</h1>
                         <div class="article-meta">
-                            <small>Published: ${new Date(data.created_at).toLocaleDateString()}</small>
+                            <small>By ${data.author_name || data.author_email || 'Anonymous'} • 
+                            Published: ${new Date(data.created_at).toLocaleDateString()}</small>
                         </div>
                         <div class="article-body">
-                            ${data.content}
+                            ${data.content.replace(/\n/g, '<br>')}
                         </div>
+                        <p><a href="blog.html">← Back to Blog</a></p>
                     </article>
                 `
             }
         }
+
+        async function loadComments() {
+            const { data: comments, error } = await supabase
+             .from('comments')
+             .select('*')
+             .eq('article_id', articleId)
+             .order('created_at', { ascending: true })
+
+            if (error) {
+                commentsList.innerHTML = `<p style="color:red">Error loading comments: ${error.message}</p>`
+                return
+            }
+
+            if (!comments || comments.length === 0) {
+                commentsList.innerHTML = '<p>No comments yet. Be the first!</p>'
+                return
+            }
+
+            commentsList.innerHTML = comments.map(comment => `
+                <div class="comment" data-id="${comment.id}">
+                    <div class="comment-meta">
+                        <strong>${comment.author_name || comment.author_email || 'Anonymous'}</strong> • 
+                        ${new Date(comment.created_at).toLocaleString()}
+                    </div>
+                    <p>${comment.content}</p>
+                    ${user && user.id === comment.user_id? 
+                      `<button class="deleteCommentBtn" data-id="${comment.id}">Delete</button>` : ''}
+                </div>
+            `).join('')
+
+            // Auto-scroll if URL has #comments
+            if (window.location.hash === '#comments') {
+                document.getElementById('commentsSection').scrollIntoView()
+            }
+        }
+
+        // Post comment
+        document.getElementById('postCommentBtn')?.addEventListener('click', async () => {
+            const commentText = document.getElementById('commentText')
+            const commentMsg = document.getElementById('commentMsg')
+            const content = commentText.value.trim()
+            
+            if (!content) {
+                commentMsg.textContent = 'Comment cannot be empty'
+                return
+            }
+
+            const { error } = await supabase.from('comments').insert({
+                article_id: articleId,
+                user_id: user.id,
+                author_email: user.email,
+                author_name: user.user_metadata?.full_name || user.email.split('@')[0],
+                content: content
+            })
+
+            if (error) {
+                commentMsg.textContent = `Error: ${error.message}`
+            } else {
+                commentText.value = ''
+                commentMsg.textContent = ''
+                await loadComments()
+            }
+        })
+
+        // Delete comment
+        commentsList.addEventListener('click', async (e) => {
+            if (e.target.classList.contains('deleteCommentBtn')) {
+                const id = e.target.dataset.id
+                if (!confirm('Delete this comment?')) return
+                
+                const { error } = await supabase.from('comments').delete().eq('id', id)
+                if (error) alert(`Error: ${error.message}`)
+                else await loadComments()
+            }
+        })
     </script>
 </body>
-</html>
+    </html>
