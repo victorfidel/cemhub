@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Post Article - CEM Hub</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./CSS/style.css">
+</head>
+<body>
+    <main>
+        <h1 id="pageTitle">New Article</h1>
+
+        <form id="articleForm">
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" id="title" placeholder="Article title" required>
+            </div>
+
+            <div class="form-group">
+                <label>Category</label>
+                <select id="category" required>
+                    <option value="">Select category</option>
+                    <option value="general">General</option>
+                    <option value="updates">Updates</option>
+                    <option value="event news">Event News</option>
+                    <option value="event recap">Event Recap</option>
+                    <option value="internship">Internship</option>
+                    <option value="featured">Featured</option>
+                    <option value="scholarship">Scholarship</option>
+                    <option value="purpose discovery">Purpose Discovery</option>
+                    <option value="leadership">Leadership</option>
+                    <option value="academics">Academics</option>
+                    <option value="self development">Self Development</option>
+                    <option value="book recommendation">Book Recommendation</option>
+                    <option value="CEM Hub stories">CEM Hub Stories</option>
+                    <option value="research work">Research Work</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Cover Image URL</label>
+                <input type="url" id="cover_image_url" placeholder="https://example.com/image.jpg">
+            </div>
+
+            <div class="form-group">
+                <label>Excerpt</label>
+                <textarea id="excerpt" placeholder="Short summary for article previews" rows="3"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Content</label>
+                <textarea id="content" placeholder="Write your article..." rows="12" required></textarea>
+            </div>
+
+            <button type="submit" id="submitBtn">Publish Article</button>
+            <button type="button" id="cancelBtn">Cancel</button>
+            <div id="msg"></div>
+        </form>
+    </main>
+
+    <script type="module">
+    import { supabase } from './js/supabase.js'
+    import { initLayout } from './js/layout.js'
+
+    const user = await initLayout()
+    if (!user) {
+        window.location.href = 'login.html'
+    }
+
+    const form = document.getElementById('articleForm')
+    const pageTitle = document.getElementById('pageTitle')
+    const submitBtn = document.getElementById('submitBtn')
+    const msg = document.getElementById('msg')
+    const cancelBtn = document.getElementById('cancelBtn')
+
+    const urlParams = new URLSearchParams(window.location.search)
+    const editId = urlParams.get('edit')
+    let isEditing = false
+
+    if (editId) {
+        isEditing = true
+        pageTitle.textContent = 'Edit Article'
+        submitBtn.textContent = 'Update Article'
+        await loadArticle(editId)
+    }
+
+    async function loadArticle(id) {
+        const { data: article, error } = await supabase
+         .from('articles')
+         .select('*')
+         .eq('id', id)
+         .single()
+
+        if (error ||!article) {
+            msg.textContent = 'Error: Article not found'
+            msg.style.color = 'red'
+            return
+        }
+
+        if (article.author_id!== user.id) {
+            msg.textContent = 'Error: You can only edit your own articles'
+            msg.style.color = 'red'
+            form.style.display = 'none'
+            return
+        }
+
+        document.getElementById('title').value = article.title
+        document.getElementById('content').value = article.content
+        document.getElementById('category').value = article.category || ''
+        document.getElementById('cover_image_url').value = article.cover_image_url || ''
+        document.getElementById('excerpt').value = article.excerpt || ''
+    }
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault()
+
+        const title = document.getElementById('title').value
+        const content = document.getElementById('content').value
+        const category = document.getElementById('category').value
+        const cover_image_url = document.getElementById('cover_image_url').value
+        const excerpt = document.getElementById('excerpt').value
+
+        if (!title ||!content ||!category) {
+            msg.textContent = 'Title, category, and content are required'
+            msg.style.color = 'red'
+            return
+        }
+
+        msg.textContent = 'Saving...'
+        msg.style.color = '#333'
+
+        const articleData = {
+            title,
+            content,
+            category,
+            cover_image_url: cover_image_url || null,
+            excerpt: excerpt || null,
+            author_id: user.id,
+            author_email: user.email,
+            author_name: user.user_metadata?.full_name || user.email.split('@')[0]
+        }
+
+        let error
+        if (isEditing) {
+            ({ error } = await supabase
+             .from('articles')
+             .update(articleData)
+             .eq('id', editId))
+        } else {
+            ({ error } = await supabase
+             .from('articles')
+             .insert(articleData))
+        }
+
+        if (error) {
+            msg.textContent = `Error: ${error.message}`
+            msg.style.color = 'red'
+        } else {
+            msg.textContent = isEditing? 'Updated!' : 'Published!'
+            msg.style.color = 'green'
+            setTimeout(() => {
+                window.location.href = 'blog.html'
+            }, 1000)
+        }
+    })
+
+    cancelBtn.addEventListener('click', () => {
+        window.location.href = 'blog.html'
+    })
+    </script>
+</body>
+                                                           </html>
