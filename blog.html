@@ -56,20 +56,29 @@
             return
         }
 
-        // Skip likes/comments for now - just show articles
-        const articlesWithCounts = articles.map(article => ({
-            ...article, 
-            likeCount: 0, 
-            commentCount: 0, 
-            isLiked: false 
-        }))
+        // Now try to fetch likes - RLS is off so this should work
+        const { data: likes, error: likesError } = await supabase
+         .from('likes')
+         .select('article_id, user_id')
+        
+        if (likesError) {
+            showError(`Likes error: ${likesError.message}`)
+            return
+        }
+
+        const userLikes = user && likes ? likes.filter(l => l.user_id === user.id).map(l => l.article_id) : []
+        
+        const articlesWithCounts = articles.map(article => {
+            const likeCount = likes?.filter(l => l.article_id === article.id).length || 0
+            const isLiked = userLikes.includes(article.id)
+            return { ...article, likeCount, commentCount: 0, isLiked }
+        })
 
         renderArticles(articlesWithCounts)
     } catch (err) {
         showError(`Unexpected: ${err.message}`)
     }
-    }
-
+            }
     function renderArticles(articles) {
         articlesDiv.innerHTML = articles.map(article => `
             <article class="article" data-id="${article.id}">
