@@ -177,7 +177,7 @@
         const { error } = await supabase.from('comments').insert({
             article_id: articleId,
             content,
-            author_id: user.id,
+            user_id: user.id,
             author_email: user.email,
             author_name: user.user_metadata?.full_name || user.email.split('@')[0]
         })
