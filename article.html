@@ -5,28 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="./CSS/style.css">
     <style>
-        .comments { margin-top: 40px; border-top: 1px solid #ddd; padding-top: 20px; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .article-card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .comments { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .comment { border-bottom: 1px solid #eee; padding: 15px 0; }
-        .comment-meta { font-size: 0.9em; color: #666; margin-bottom: 5px; }
+        .comment:last-child { border-bottom: none; }
+        .comment-meta { font-size: 0.9em; color: #666; margin-bottom: 8px; }
         #commentForm { margin: 20px 0; }
-        #commentText { width: 100%; padding: 10px; margin-bottom: 10px; }
-        .deleteCommentBtn { font-size: 0.8em; color: red; background: none; border: none; cursor: pointer; }
+        #commentText { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        #postCommentBtn { background: #1a1a2e; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; margin-top: 10px; }
+        .deleteCommentBtn { font-size: 0.8em; color: #c00; background: none; border: none; cursor: pointer; padding: 0; }
+        #commentMsg { color: red; margin-top: 8px; }
     </style>
 </head>
 <body>
-    <main id="articleContent">
-        <p>Loading article...</p>
-    </main>
-
-    <section id="commentsSection" class="comments">
-        <h3>Comments</h3>
-        <div id="commentForm" class="hidden">
-            <textarea id="commentText" placeholder="Write a comment..." rows="3"></textarea>
-            <button id="postCommentBtn">Post Comment</button>
-            <p id="commentMsg"></p>
+    <main class="container">
+        <div id="articleContent" class="article-card">
+            <p>Loading article...</p>
         </div>
-        <div id="commentsList">Loading comments...</div>
-    </section>
+
+        <section id="commentsSection" class="comments">
+            <h3>Comments</h3>
+            <div id="commentForm" class="hidden">
+                <textarea id="commentText" placeholder="Write a comment..." rows="3"></textarea>
+                <button id="postCommentBtn">Post Comment</button>
+                <p id="commentMsg"></p>
+            </div>
+            <div id="commentsList">Loading comments...</div>
+        </section>
+    </main>
     
     <script type="module">
         import { supabase } from './js/supabase.js'
@@ -69,7 +76,7 @@
                         <div class="article-body">
                             ${data.content.replace(/\n/g, '<br>')}
                         </div>
-                        <p><a href="blog.html">← Back to Blog</a></p>
+                        <p style="margin-top:20px;"><a href="blog.html">← Back to Blog</a></p>
                     </article>
                 `
             }
@@ -104,13 +111,11 @@
                 </div>
             `).join('')
 
-            // Auto-scroll if URL has #comments
             if (window.location.hash === '#comments') {
                 document.getElementById('commentsSection').scrollIntoView()
             }
         }
 
-        // Post comment
         document.getElementById('postCommentBtn')?.addEventListener('click', async () => {
             const commentText = document.getElementById('commentText')
             const commentMsg = document.getElementById('commentMsg')
@@ -120,6 +125,8 @@
                 commentMsg.textContent = 'Comment cannot be empty'
                 return
             }
+
+            commentMsg.textContent = 'Posting...'
 
             const { error } = await supabase.from('comments').insert({
                 article_id: articleId,
@@ -138,7 +145,6 @@
             }
         })
 
-        // Delete comment
         commentsList.addEventListener('click', async (e) => {
             if (e.target.classList.contains('deleteCommentBtn')) {
                 const id = e.target.dataset.id
@@ -151,4 +157,4 @@
         })
     </script>
 </body>
-    </html>
+</html>
