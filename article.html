@@ -93,11 +93,15 @@
                     Posted ${new Date(article.created_at).toLocaleDateString()}
                 </div>
 
+                <div class="article-content-full">
+                    ${article.content}
+                </div>
+
                 <div class="article-actions">
                     <button class="action-btn likeBtn ${isLiked? 'liked' : ''}" data-id="${article.id}">
                         ${isLiked? '❤️' : '🤍'} ${likeCount}
                     </button>
-                    <button class="action-btn static">💬 ${commentCount}</button>
+                    <a class="action-btn" href="#comments-section">💬 ${commentCount}</a>
                     ${user && user.id === article.author_id? `
                         <a class="action-btn" href="post-article.html?edit=${article.id}">
                             ✏️ Edit
@@ -112,10 +116,6 @@
                         <a class="share-btn" target="_blank" href="https://wa.me/?text=${encodeURIComponent(article.title + ' ' + currentUrl)}">WhatsApp</a>
                         <button class="share-btn" id="copyLinkBtn">Copy Link</button>
                     </div>
-                </div>
-
-                <div class="article-content-full">
-                    ${article.content}
                 </div>
             </article>
         `
@@ -148,7 +148,9 @@
 
         document.getElementById('copyLinkBtn')?.addEventListener('click', () => {
             navigator.clipboard.writeText(currentUrl)
-            alert('Link copied!')
+            const btn = document.getElementById('copyLinkBtn')
+            btn.textContent = 'Copied!'
+            setTimeout(() => btn.textContent = 'Copy Link', 2000)
         })
     }
 
