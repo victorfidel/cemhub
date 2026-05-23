@@ -8,15 +8,11 @@
 </head>
 <body>
     <main>
-        <div id="postForm" class="hidden">
-            <h2>New Post</h2>
-            <input type="text" id="title" placeholder="Article title">
-            <textarea id="content" placeholder="Write your article..."></textarea>
-            <button id="publishBtn">Publish Article</button>
-            <div id="msg"></div>
+        <div class="blog-header">
+            <h1>Latest Articles</h1>
+            <a href="post-article.html" id="createBtn" class="hidden">+ Create Article</a>
         </div>
-
-        <h1>Latest Articles</h1>
+        
         <div id="articles">Loading...</div>
     </main>
 
@@ -25,10 +21,9 @@
     import { initLayout } from './js/layout.js'
 
     const user = await initLayout()
-    const postForm = document.getElementById('postForm')
+    const createBtn = document.getElementById('createBtn')
     const articlesDiv = document.getElementById('articles')
 
-    // Show errors on page so you can see them on phone
     function showError(msg) {
         articlesDiv.innerHTML = `<div style="color:red; padding:20px; border:1px solid red; background:#ffeeee;">
             <strong>Error:</strong> ${msg}
@@ -36,15 +31,15 @@
     }
 
     if (user) {
-        postForm.classList.remove('hidden')
+        createBtn.classList.remove('hidden')
     }
 
     async function loadArticles() {
     try {
         const { data: articles, error: articlesError } = await supabase
-         .from('articles')
-         .select('*')
-         .order('created_at', { ascending: false })
+        .from('articles')
+        .select('*')
+        .order('created_at', { ascending: false })
 
         if (articlesError) {
             showError(`Articles table: ${articlesError.message}`)
@@ -56,33 +51,31 @@
             return
         }
 
-        // Fetch likes
         const { data: likes, error: likesError } = await supabase
-         .from('likes')
-         .select('article_id, user_id')
+        .from('likes')
+        .select('article_id, user_id')
         
         if (likesError) {
             showError(`Likes error: ${likesError.message}`)
             return
         }
 
-        // Fetch comment counts
         const { data: comments, error: commentsError } = await supabase
-         .from('comments')
-         .select('article_id')
+        .from('comments')
+        .select('article_id')
 
         if (commentsError) {
             showError(`Comments error: ${commentsError.message}`)
             return
         }
 
-        const userLikes = user && likes ? likes.filter(l => l.user_id === user.id).map(l => l.article_id) : []
+        const userLikes = user && likes? likes.filter(l => l.user_id === user.id).map(l => l.article_id) : []
         
         const articlesWithCounts = articles.map(article => {
             const likeCount = likes?.filter(l => l.article_id === article.id).length || 0
             const commentCount = comments?.filter(c => c.article_id === article.id).length || 0
             const isLiked = userLikes.includes(article.id)
-            return { ...article, likeCount, commentCount, isLiked }
+            return {...article, likeCount, commentCount, isLiked }
         })
 
         renderArticles(articlesWithCounts)
@@ -94,14 +87,14 @@
     function renderArticles(articles) {
         articlesDiv.innerHTML = articles.map(article => `
             <article class="article" data-id="${article.id}">
-                ${article.cover_image_url ? `
+                ${article.cover_image_url? `
                     <a href="article.html?id=${article.id}">
                         <img src="${article.cover_image_url}" alt="${article.title}" class="article-cover">
                     </a>
                 ` : ''}
                 
                 <div class="article-content">
-                    ${article.category ? `<span class="category-badge">${article.category}</span>` : ''}
+                    ${article.category? `<span class="category-badge">${article.category}</span>` : ''}
                     
                     <h3><a href="article.html?id=${article.id}">${article.title}</a></h3>
                     
@@ -133,7 +126,6 @@
 
     await loadArticles()
 
-    // Handle clicks
     articlesDiv.addEventListener('click', async (e) => {
         const btn = e.target.closest('button')
         if (!btn) return
@@ -155,43 +147,13 @@
 
             const isLiked = btn.classList.contains('liked')
             const { error } = isLiked 
-             ? await supabase.from('likes').delete().eq('user_id', user.id).eq('article_id', id)
+            ? await supabase.from('likes').delete().eq('user_id', user.id).eq('article_id', id)
               : await supabase.from('likes').insert({ user_id: user.id, article_id: id })
             
             if (error) alert(`Like error: ${error.message}`)
             else await loadArticles()
         }
     })
-
-    // Publish
-    document.getElementById('publishBtn')?.addEventListener('click', async () => {
-        const title = document.getElementById('title').value
-        const content = document.getElementById('content').value
-        const msg = document.getElementById('msg')
-
-        if (!title ||!content) {
-            msg.textContent = 'Title and content required'
-            return
-        }
-
-        const { error } = await supabase.from('articles').insert({
-            title,
-            content,
-            user_id: user.id,
-            author_id: user.id,
-            author_email: user.email,
-            author_name: user.user_metadata?.full_name || user.email.split('@')[0]
-        })
-
-        if (error) {
-            msg.textContent = `Error: ${error.message}`
-        } else {
-            msg.textContent = 'Published!'
-            document.getElementById('title').value = ''
-            document.getElementById('content').value = ''
-            await loadArticles()
-        }
-    })
 </script>
 </body>
-</html>
+    </html>
