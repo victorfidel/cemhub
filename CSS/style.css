@@ -23,6 +23,12 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  margin: 0;
+    padding: 0;
+}
+
+main {
+    padding-top: 0;
 }
 
 /* Layout */
