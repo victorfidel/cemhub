@@ -9,7 +9,18 @@
 <body>
     <main>
         <div id="article">Loading...</div>
-        <section id="comments-section" class="hidden"></section>
+
+        <section id="comments-section" class="hidden">
+            <h3>Comments</h3>
+            <div id="comments">Loading comments...</div>
+            
+            <div id="commentForm" class="hidden">
+                <h4>Add a comment</h4>
+                <textarea id="commentText" placeholder="Write your comment..."></textarea>
+                <button id="postCommentBtn">Post Comment</button>
+                <div id="commentMsg"></div>
+            </div>
+        </section>
     </main>
 
     <script type="module">
@@ -19,6 +30,9 @@
     const user = await initLayout()
     const articleDiv = document.getElementById('article')
     const commentsSection = document.getElementById('comments-section')
+    const commentsDiv = document.getElementById('comments')
+    const commentForm = document.getElementById('commentForm')
+
     const urlParams = new URLSearchParams(window.location.search)
     const articleId = urlParams.get('id')
 
@@ -26,6 +40,11 @@
         articleDiv.innerHTML = '<p>Article not found</p>'
     } else {
         await loadArticle()
+        await loadComments()
+        
+        if (user) {
+            commentForm.classList.remove('hidden')
+        }
     }
 
     async function loadArticle() {
@@ -35,26 +54,19 @@
         .eq('id', articleId)
         .single()
 
-        if (error || !article) {
+        if (error ||!article) {
             articleDiv.innerHTML = '<p>Error loading article</p>'
             return
         }
 
-        // Get likes + comments count
+        // Get likes count
         const { data: likes } = await supabase
         .from('likes')
         .select('user_id')
         .eq('article_id', articleId)
 
-        const { data: comments } = await supabase
-        .from('comments')
-        .select('id')
-        .eq('article_id', articleId)
-
         const likeCount = likes?.length || 0
-        const commentCount = comments?.length || 0
         const isLiked = user && likes?.some(l => l.user_id === user.id)
-        const shareUrl = window.location.href
 
         articleDiv.innerHTML = `
             ${article.cover_image_url? `
@@ -65,14 +77,27 @@
             
             <article class="article-full">
                 ${article.category? `<span class="category-badge">${article.category}</span>` : ''}
+                
                 <h1>${article.title}</h1>
+                
                 ${article.excerpt? `<p class="article-excerpt">${article.excerpt}</p>` : ''}
+                
                 <div class="meta">
-                    By <a href="profile.html?user=${article.author_id}">${article.author_name || article.author_email}</a> • 
+                    By <a href="profile.html?user=${article.author_id}">${article.author_name || article.author_email || 'Anonymous'}</a> • 
                     Posted ${new Date(article.created_at).toLocaleDateString()}
+                </div>
+
+                <div class="actions">
+                    <button class="action-btn likeBtn ${isLiked? 'liked' : ''}" data-id="${article.id}">
+                        ${isLiked? '❤️' : '🤍'} ${likeCount}
+                    </button>
                     ${user && user.id === article.author_id? `
-                        • <a href="post-article.html?edit=${article.id}">Edit</a>
-                        • <button class="link-btn deleteBtn" data-id="${article.id}">Delete</button>
+                        <a class="action-btn" href="post-article.html?edit=${article.id}">
+                            ✏️ Edit
+                        </a>
+                        <button class="action-btn delete-btn deleteBtn" data-id="${article.id}">
+                            🗑️ Delete
+                        </button>
                     ` : ''}
                 </div>
 
@@ -82,74 +107,47 @@
             </article>
         `
 
-        commentsSection.innerHTML = `
-            <div class="article-actions">
-                <button class="action-btn likeBtn ${isLiked? 'liked' : ''}" data-id="${article.id}">
-                    ${isLiked? '❤️' : '🤍'} ${likeCount}
-                </button>
-                <span class="action-btn static">💬 ${commentCount}</span>
-                
-                <div class="share-group">
-                    <button class="share-btn" id="copyLinkBtn">🔗 Copy Link</button>
-                    <a class="share-btn" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}">Facebook</a>
-                    <a class="share-btn" target="_blank" href="https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(article.title)}">X</a>
-                    <a class="share-btn" target="_blank" href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}">LinkedIn</a>
-                </div>
-            </div>
-
-            <h3>Comments</h3>
-            <div id="comments">Loading comments...</div>
-            
-            <div id="commentForm" class="${user? '' : 'hidden'}">
-                <h4>Add a comment</h4>
-                <textarea id="commentText" placeholder="Write your comment..."></textarea>
-                <button id="postCommentBtn">Post Comment</button>
-                <div id="commentMsg"></div>
-            </div>
-        `
         commentsSection.classList.remove('hidden')
-        await loadComments()
 
-        // Event listeners
-        document.querySelector('.likeBtn')?.addEventListener('click', handleLike)
-        document.querySelector('.deleteBtn')?.addEventListener('click', handleDelete)
-        document.getElementById('copyLinkBtn')?.addEventListener('click', copyLink)
-        document.getElementById('postCommentBtn')?.addEventListener('click', postComment)
-    }
+        // Handle like button
+        document.querySelector('.likeBtn')?.addEventListener('click', async (e) => {
+            if (!user) {
+                alert('Log in to like articles')
+                return
+            }
 
-    async function handleLike(e) {
-        if (!user) return alert('Log in to like articles')
-        const btn = e.target.closest('button')
-        const isLiked = btn.classList.contains('liked')
-        
-        const { error } = isLiked 
-        ? await supabase.from('likes').delete().eq('user_id', user.id).eq('article_id', articleId)
-          : await supabase.from('likes').insert({ user_id: user.id, article_id: articleId })
-        
-        if (!error) await loadArticle()
-    }
+            const btn = e.target.closest('button')
+            const isLiked = btn.classList.contains('liked')
+            
+            const { error } = isLiked 
+            ? await supabase.from('likes').delete().eq('user_id', user.id).eq('article_id', articleId)
+              : await supabase.from('likes').insert({ user_id: user.id, article_id: articleId })
+            
+            if (error) alert(`Like error: ${error.message}`)
+            else await loadArticle()
+        })
 
-    async function handleDelete() {
-        if (!confirm('Delete this article?')) return
-        const { error } = await supabase.from('articles').delete().eq('id', articleId)
-        if (!error) window.location.href = 'blog.html'
-    }
-
-    function copyLink() {
-        navigator.clipboard.writeText(window.location.href)
-        const btn = document.getElementById('copyLinkBtn')
-        btn.textContent = '✓ Copied!'
-        setTimeout(() => btn.textContent = '🔗 Copy Link', 2000)
+        // Handle delete
+        document.querySelector('.deleteBtn')?.addEventListener('click', async () => {
+            if (!confirm('Delete this article?')) return
+            const { error } = await supabase.from('articles').delete().eq('id', articleId)
+            if (error) alert(`Error: ${error.message}`)
+            else window.location.href = 'blog.html'
+        })
     }
 
     async function loadComments() {
-        const { data: comments } = await supabase
+        const { data: comments, error } = await supabase
         .from('comments')
         .select('*')
         .eq('article_id', articleId)
         .order('created_at', { ascending: true })
 
-        const commentsDiv = document.getElementById('comments')
+        if (error) {
+            commentsDiv.innerHTML = '<p>Error loading comments</p>'
+            return
+        }
+
         if (!comments || comments.length === 0) {
             commentsDiv.innerHTML = '<p>No comments yet. Be the first!</p>'
             return
@@ -158,7 +156,7 @@
         commentsDiv.innerHTML = comments.map(comment => `
             <div class="comment">
                 <div class="comment-meta">
-                    <strong>${comment.author_name || comment.author_email}</strong> • 
+                    <strong>${comment.author_name || comment.author_email || 'Anonymous'}</strong> • 
                     ${new Date(comment.created_at).toLocaleDateString()}
                 </div>
                 <p>${comment.content}</p>
@@ -166,28 +164,33 @@
         `).join('')
     }
 
-    async function postComment() {
+    // Post comment
+    document.getElementById('postCommentBtn')?.addEventListener('click', async () => {
         const content = document.getElementById('commentText').value
         const msg = document.getElementById('commentMsg')
-        if (!content) return msg.textContent = 'Comment cannot be empty'
+
+        if (!content) {
+            msg.textContent = 'Comment cannot be empty'
+            return
+        }
 
         const { error } = await supabase.from('comments').insert({
             article_id: articleId,
             content,
-            user_id: user.id,
+            author_id: user.id,
             author_email: user.email,
             author_name: user.user_metadata?.full_name || user.email.split('@')[0]
         })
 
-        if (error) msg.textContent = `Error: ${error.message}`
-        else {
+        if (error) {
+            msg.textContent = `Error: ${error.message}`
+        } else {
             msg.textContent = 'Posted!'
             document.getElementById('commentText').value = ''
-            await loadArticle() // Reloads counts
             await loadComments()
             setTimeout(() => msg.textContent = '', 2000)
         }
-    }
+    })
     </script>
 </body>
     </html>
