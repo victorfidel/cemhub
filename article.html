@@ -5,17 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="./CSS/style.css">
     <style>
-        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
-        .article-card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .comments { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .comment { border-bottom: 1px solid #eee; padding: 15px 0; }
-        .comment:last-child { border-bottom: none; }
-        .comment-meta { font-size: 0.9em; color: #666; margin-bottom: 8px; }
+       .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+       .article-card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+       .comments { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+       .comment { border-bottom: 1px solid #eee; padding: 15px 0; }
+       .comment:last-child { border-bottom: none; }
+       .comment-meta { font-size: 0.9em; color: #666; margin-bottom: 8px; }
         #commentForm { margin: 20px 0; }
         #commentText { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
         #postCommentBtn { background: #1a1a2e; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; margin-top: 10px; }
-        .deleteCommentBtn { font-size: 0.8em; color: #c00; background: none; border: none; cursor: pointer; padding: 0; }
+       .deleteCommentBtn { font-size: 0.8em; color: #c00; background: none; border: none; cursor: pointer; padding: 0; }
         #commentMsg { color: red; margin-top: 8px; }
+       .hidden { display: none; }
+        #authorActions { margin: 15px 0; }
+        #editArticleBtn {
+            background: #1a1a2e; color: white; padding: 8px 16px;
+            border-radius: 6px; text-decoration: none; font-size: 0.9em;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -34,18 +41,18 @@
             <div id="commentsList">Loading comments...</div>
         </section>
     </main>
-    
+
     <script type="module">
         import { supabase } from './js/supabase.js'
         import { initLayout } from './js/layout.js'
-        
+
         const user = await initLayout()
         const params = new URLSearchParams(window.location.search)
         const articleId = params.get('id')
         const articleContent = document.getElementById('articleContent')
         const commentsList = document.getElementById('commentsList')
         const commentForm = document.getElementById('commentForm')
-        
+
         if (!articleId) {
             articleContent.innerHTML = '<h1>Error</h1><p>No article ID provided in URL.</p>'
         } else {
@@ -57,11 +64,11 @@
 
         async function loadArticle() {
             const { data, error } = await supabase
-                .from('articles')
-                .select('*')
-                .eq('id', articleId)
-                .single()
-            
+               .from('articles')
+               .select('*')
+               .eq('id', articleId)
+               .single()
+
             if (error) {
                 articleContent.innerHTML = `<h1>Error</h1><p>Could not load article: ${error.message}</p>`
             } else {
@@ -69,8 +76,11 @@
                 articleContent.innerHTML = `
                     <article>
                         <h1>${data.title}</h1>
+                        <div id="authorActions" class="hidden">
+                            <a id="editArticleBtn" href="post-article.html?edit=${articleId}">Edit Article</a>
+                        </div>
                         <div class="article-meta">
-                            <small>By ${data.author_name || data.author_email || 'Anonymous'} • 
+                            <small>By ${data.author_name || data.author_email || 'Anonymous'} •
                             Published: ${new Date(data.created_at).toLocaleDateString()}</small>
                         </div>
                         <div class="article-body">
@@ -79,15 +89,20 @@
                         <p style="margin-top:20px;"><a href="blog.html">← Back to Blog</a></p>
                     </article>
                 `
+
+                // Show edit button if user is the author
+                if (user && data.author_id === user.id) {
+                    document.getElementById('authorActions').classList.remove('hidden')
+                }
             }
         }
 
         async function loadComments() {
             const { data: comments, error } = await supabase
-             .from('comments')
-             .select('*')
-             .eq('article_id', articleId)
-             .order('created_at', { ascending: true })
+            .from('comments')
+            .select('*')
+            .eq('article_id', articleId)
+            .order('created_at', { ascending: true })
 
             if (error) {
                 commentsList.innerHTML = `<p style="color:red">Error loading comments: ${error.message}</p>`
@@ -102,11 +117,11 @@
             commentsList.innerHTML = comments.map(comment => `
                 <div class="comment" data-id="${comment.id}">
                     <div class="comment-meta">
-                        <strong>${comment.author_name || comment.author_email || 'Anonymous'}</strong> • 
+                        <strong>${comment.author_name || comment.author_email || 'Anonymous'}</strong> •
                         ${new Date(comment.created_at).toLocaleString()}
                     </div>
                     <p>${comment.content}</p>
-                    ${user && user.id === comment.user_id? 
+                    ${user && user.id === comment.user_id?
                       `<button class="deleteCommentBtn" data-id="${comment.id}">Delete</button>` : ''}
                 </div>
             `).join('')
@@ -120,7 +135,7 @@
             const commentText = document.getElementById('commentText')
             const commentMsg = document.getElementById('commentMsg')
             const content = commentText.value.trim()
-            
+
             if (!content) {
                 commentMsg.textContent = 'Comment cannot be empty'
                 return
@@ -149,7 +164,7 @@
             if (e.target.classList.contains('deleteCommentBtn')) {
                 const id = e.target.dataset.id
                 if (!confirm('Delete this comment?')) return
-                
+
                 const { error } = await supabase.from('comments').delete().eq('id', id)
                 if (error) alert(`Error: ${error.message}`)
                 else await loadComments()
@@ -157,4 +172,4 @@
         })
     </script>
 </body>
-</html>
+    </html>
