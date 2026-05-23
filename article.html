@@ -59,14 +59,20 @@
             return
         }
 
-        // Get likes count
         const { data: likes } = await supabase
         .from('likes')
         .select('user_id')
         .eq('article_id', articleId)
 
+        const { data: comments } = await supabase
+        .from('comments')
+        .select('id')
+        .eq('article_id', articleId)
+
         const likeCount = likes?.length || 0
+        const commentCount = comments?.length || 0
         const isLiked = user && likes?.some(l => l.user_id === user.id)
+        const currentUrl = window.location.href
 
         articleDiv.innerHTML = `
             ${article.cover_image_url? `
@@ -87,10 +93,11 @@
                     Posted ${new Date(article.created_at).toLocaleDateString()}
                 </div>
 
-                <div class="actions">
+                <div class="article-actions">
                     <button class="action-btn likeBtn ${isLiked? 'liked' : ''}" data-id="${article.id}">
                         ${isLiked? '❤️' : '🤍'} ${likeCount}
                     </button>
+                    <button class="action-btn static">💬 ${commentCount}</button>
                     ${user && user.id === article.author_id? `
                         <a class="action-btn" href="post-article.html?edit=${article.id}">
                             ✏️ Edit
@@ -99,6 +106,12 @@
                             🗑️ Delete
                         </button>
                     ` : ''}
+                    <div class="share-group">
+                        <a class="share-btn" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}">Facebook</a>
+                        <a class="share-btn" target="_blank" href="https://twitter.com/intent/tweet?url=${encodeURIComponent(currentUrl)}&text=${encodeURIComponent(article.title)}">X</a>
+                        <a class="share-btn" target="_blank" href="https://wa.me/?text=${encodeURIComponent(article.title + ' ' + currentUrl)}">WhatsApp</a>
+                        <button class="share-btn" id="copyLinkBtn">Copy Link</button>
+                    </div>
                 </div>
 
                 <div class="article-content-full">
@@ -109,7 +122,6 @@
 
         commentsSection.classList.remove('hidden')
 
-        // Handle like button
         document.querySelector('.likeBtn')?.addEventListener('click', async (e) => {
             if (!user) {
                 alert('Log in to like articles')
@@ -127,12 +139,16 @@
             else await loadArticle()
         })
 
-        // Handle delete
         document.querySelector('.deleteBtn')?.addEventListener('click', async () => {
             if (!confirm('Delete this article?')) return
             const { error } = await supabase.from('articles').delete().eq('id', articleId)
             if (error) alert(`Error: ${error.message}`)
             else window.location.href = 'blog.html'
+        })
+
+        document.getElementById('copyLinkBtn')?.addEventListener('click', () => {
+            navigator.clipboard.writeText(currentUrl)
+            alert('Link copied!')
         })
     }
 
@@ -164,7 +180,6 @@
         `).join('')
     }
 
-    // Post comment
     document.getElementById('postCommentBtn')?.addEventListener('click', async () => {
         const content = document.getElementById('commentText').value
         const msg = document.getElementById('commentMsg')
@@ -188,6 +203,7 @@
             msg.textContent = 'Posted!'
             document.getElementById('commentText').value = ''
             await loadComments()
+            await loadArticle()
             setTimeout(() => msg.textContent = '', 2000)
         }
     })
