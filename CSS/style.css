@@ -632,3 +632,92 @@ input[type="file"] {
     border-radius: 8px;
     width: 100%;
 }
+
+/* Article Page */
+.article-hero {
+    width: 100%;
+    height: 400px;
+    margin-bottom: 32px;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.article-hero img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.article-full {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.article-full h1 {
+    font-size: 2.5rem;
+    line-height: 1.2;
+    margin: 16px 0;
+    color: #111827;
+}
+
+.article-excerpt {
+    font-size: 1.25rem;
+    color: #6b7280;
+    line-height: 1.6;
+    margin-bottom: 24px;
+    font-style: italic;
+}
+
+.article-content-full {
+    margin-top: 32px;
+    font-size: 1.125rem;
+    line-height: 1.8;
+    color: #374151;
+}
+
+.article-content-full p {
+    margin-bottom: 1.5em;
+}
+
+#comments-section {
+    max-width: 800px;
+    margin: 48px auto 0;
+    padding-top: 32px;
+    border-top: 2px solid #e5e7eb;
+}
+
+.comment {
+    background: #f9fafb;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.comment-meta {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 8px;
+}
+
+#commentForm {
+    margin-top: 24px;
+}
+
+#commentText {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    min-height: 100px;
+    margin-bottom: 12px;
+    font-family: inherit;
+}
+
+#postCommentBtn {
+    background: #3b82f6;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
