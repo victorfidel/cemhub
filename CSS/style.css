@@ -472,36 +472,6 @@ textarea { height: 120px; resize: vertical; }
 }
 
 /* Category Filter */
-.category-filter {
-    display: flex;
-    gap: 8px;
-    margin: 24px 0;
-    overflow-x: auto;
-    padding-bottom: 8px;
-}
-
-.filter-btn {
-    padding: 8px 16px;
-    border: 1px solid var(--border);
-    background: white;
-    color: var(--text);
-    border-radius: 20px;
-    cursor: pointer;
-    white-space: nowrap;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: all 0.2s;
-}
-
-.filter-btn:hover {
-    background: var(--bg);
-}
-
-.filter-btn.active {
-    background: var(--primary);
-    color: white;
-    border-color: var(--primary);
-}
 
 /* Article Card */
 .article-card {
