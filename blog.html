@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>CEM Hub</title>
+    <title>Blog - CEM Hub</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="./CSS/style.css">
@@ -10,10 +10,21 @@
     <main>
         <div class="blog-header">
             <h1>Latest Articles</h1>
-            <a href="post-article.html" id="createBtn" class="hidden">+ Create Article</a>
+            <a id="postBtn" class="hidden" href="post-article.html">
+                <button>Post Article</button>
+            </a>
         </div>
-        
-        <div id="articles">Loading...</div>
+
+        <div id="categoryFilter" class="category-filter">
+            <button class="filter-btn active" data-category="all">All</button>
+            <button class="filter-btn" data-category="CEM Hub Stories">CEM Hub Stories</button>
+            <button class="filter-btn" data-category="Tech Meets">Tech Meets</button>
+            <button class="filter-btn" data-category="Materials">Materials</button>
+            <button class="filter-btn" data-category="Business">Business</button>
+            <button class="filter-btn" data-category="Lifestyle">Lifestyle</button>
+        </div>
+
+        <div id="articles">Loading articles...</div>
     </main>
 
     <script type="module">
@@ -21,139 +32,65 @@
     import { initLayout } from './js/layout.js'
 
     const user = await initLayout()
-    const createBtn = document.getElementById('createBtn')
     const articlesDiv = document.getElementById('articles')
+    const postBtn = document.getElementById('postBtn')
+    let currentCategory = 'all'
 
-    function showError(msg) {
-        articlesDiv.innerHTML = `<div style="color:red; padding:20px; border:1px solid red; background:#ffeeee;">
-            <strong>Error:</strong> ${msg}
-        </div>`
-    }
+    if (user) postBtn.classList.remove('hidden')
 
-    if (user) {
-        createBtn.classList.remove('hidden')
-    }
+    // Category filter clicks
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'))
+            btn.classList.add('active')
+            currentCategory = btn.dataset.category
+            loadArticles()
+        })
+    })
 
     async function loadArticles() {
-    try {
-        const { data: articles, error: articlesError } = await supabase
+        let query = supabase
         .from('articles')
         .select('*')
         .order('created_at', { ascending: false })
 
-        if (articlesError) {
-            showError(`Articles table: ${articlesError.message}`)
+        if (currentCategory !== 'all') {
+            query = query.eq('category', currentCategory)
+        }
+
+        const { data: articles, error } = await query
+
+        if (error) {
+            articlesDiv.innerHTML = '<p>Error loading articles</p>'
             return
         }
-        
+
         if (!articles || articles.length === 0) {
-            articlesDiv.innerHTML = '<p>No articles yet.</p>'
+            articlesDiv.innerHTML = `<p>No articles in ${currentCategory === 'all'? 'any category' : currentCategory} yet.</p>`
             return
         }
 
-        const { data: likes, error: likesError } = await supabase
-        .from('likes')
-        .select('article_id, user_id')
-        
-        if (likesError) {
-            showError(`Likes error: ${likesError.message}`)
-            return
-        }
-
-        const { data: comments, error: commentsError } = await supabase
-        .from('comments')
-        .select('article_id')
-
-        if (commentsError) {
-            showError(`Comments error: ${commentsError.message}`)
-            return
-        }
-
-        const userLikes = user && likes? likes.filter(l => l.user_id === user.id).map(l => l.article_id) : []
-        
-        const articlesWithCounts = articles.map(article => {
-            const likeCount = likes?.filter(l => l.article_id === article.id).length || 0
-            const commentCount = comments?.filter(c => c.article_id === article.id).length || 0
-            const isLiked = userLikes.includes(article.id)
-            return {...article, likeCount, commentCount, isLiked }
-        })
-
-        renderArticles(articlesWithCounts)
-    } catch (err) {
-        showError(`Unexpected: ${err.message}`)
-    }
-    }
-    
-    function renderArticles(articles) {
         articlesDiv.innerHTML = articles.map(article => `
-            <article class="article" data-id="${article.id}">
+            <div class="article-card">
                 ${article.cover_image_url? `
-                    <a href="article.html?id=${article.id}">
-                        <img src="${article.cover_image_url}" alt="${article.title}" class="article-cover">
-                    </a>
+                    <div class="article-cover">
+                        <img src="${article.cover_image_url}" alt="${article.title}">
+                    </div>
                 ` : ''}
-                
                 <div class="article-content">
                     ${article.category? `<span class="category-badge">${article.category}</span>` : ''}
-                    
                     <h3><a href="article.html?id=${article.id}">${article.title}</a></h3>
-                    
                     <div class="meta">
-                        By <a href="profile.html?user=${article.author_id}">${article.author_name || article.author_email || 'Anonymous'}</a> • 
+                        By <a href="profile.html?user=${article.author_id}">${article.author_name || article.author_email}</a> • 
                         Posted ${new Date(article.created_at).toLocaleDateString()}
                     </div>
-                    
-                    <p>${article.excerpt || article.content.substring(0, 150)}...</p>
-                    
-                    <div class="actions">
-                        <button class="action-btn likeBtn ${article.isLiked? 'liked' : ''}" data-id="${article.id}">
-                            ${article.isLiked? '❤️' : '🤍'} ${article.likeCount}
-                        </button>
-                        <a class="action-btn" href="article.html?id=${article.id}#comments">💬 ${article.commentCount}</a>
-                        ${user && user.id === article.author_id? `
-                            <a class="action-btn" href="post-article.html?edit=${article.id}">
-                                ✏️ Edit
-                            </a>
-                            <button class="action-btn delete-btn deleteBtn" data-id="${article.id}">
-                                🗑️ Delete
-                            </button>
-                        ` : ''}
-                    </div>
+                    ${article.excerpt? `<p class="excerpt">${article.excerpt}</p>` : ''}
                 </div>
-            </article>
+            </div>
         `).join('')
     }
 
-    await loadArticles()
-
-    articlesDiv.addEventListener('click', async (e) => {
-        const btn = e.target.closest('button')
-        if (!btn) return
-        const id = btn.dataset.id
-        if (!id) return
-
-        if (btn.classList.contains('deleteBtn')) {
-            if (!confirm('Delete this article?')) return
-            const { error } = await supabase.from('articles').delete().eq('id', id)
-            if (error) alert(`Error: ${error.message}`)
-            else await loadArticles()
-        }
-
-        if (btn.classList.contains('likeBtn')) {
-            if (!user) {
-                alert('Log in to like articles')
-                return
-            }
-
-            const isLiked = btn.classList.contains('liked')
-            const { error } = isLiked 
-            ? await supabase.from('likes').delete().eq('user_id', user.id).eq('article_id', id)
-              : await supabase.from('likes').insert({ user_id: user.id, article_id: id })
-            
-            if (error) alert(`Like error: ${error.message}`)
-            else await loadArticles()
-        }
-    })
-</script>
+    loadArticles()
+    </script>
 </body>
-    </html>
+                </html>
