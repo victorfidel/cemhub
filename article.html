@@ -2,174 +2,195 @@
 <html>
 <head>
     <title>Article - CEM Hub</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="./CSS/style.css">
-    <style>
-       .container { max-width: 800px; margin: 0 auto; padding: 20px; }
-       .article-card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-       .comments { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-       .comment { border-bottom: 1px solid #eee; padding: 15px 0; }
-       .comment:last-child { border-bottom: none; }
-       .comment-meta { font-size: 0.9em; color: #666; margin-bottom: 8px; }
-        #commentForm { margin: 20px 0; }
-        #commentText { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        #postCommentBtn { background: #1a1a2e; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; margin-top: 10px; }
-       .deleteCommentBtn { font-size: 0.8em; color: #c00; background: none; border: none; cursor: pointer; padding: 0; }
-        #commentMsg { color: red; margin-top: 8px; }
-       .hidden { display: none; }
-        #authorActions { margin: 15px 0; }
-        #editArticleBtn {
-            background: #1a1a2e; color: white; padding: 8px 16px;
-            border-radius: 6px; text-decoration: none; font-size: 0.9em;
-            display: inline-block;
-        }
-    </style>
 </head>
 <body>
-    <main class="container">
-        <div id="articleContent" class="article-card">
-            <p>Loading article...</p>
-        </div>
+    <main>
+        <div id="article">Loading...</div>
 
-        <section id="commentsSection" class="comments">
+        <section id="comments-section" class="hidden">
             <h3>Comments</h3>
+            <div id="comments">Loading comments...</div>
+            
             <div id="commentForm" class="hidden">
-                <textarea id="commentText" placeholder="Write a comment..." rows="3"></textarea>
+                <h4>Add a comment</h4>
+                <textarea id="commentText" placeholder="Write your comment..."></textarea>
                 <button id="postCommentBtn">Post Comment</button>
-                <p id="commentMsg"></p>
+                <div id="commentMsg"></div>
             </div>
-            <div id="commentsList">Loading comments...</div>
         </section>
     </main>
 
     <script type="module">
-        import { supabase } from './js/supabase.js'
-        import { initLayout } from './js/layout.js'
+    import { supabase } from './js/supabase.js'
+    import { initLayout } from './js/layout.js'
 
-        const user = await initLayout()
-        const params = new URLSearchParams(window.location.search)
-        const articleId = params.get('id')
-        const articleContent = document.getElementById('articleContent')
-        const commentsList = document.getElementById('commentsList')
-        const commentForm = document.getElementById('commentForm')
+    const user = await initLayout()
+    const articleDiv = document.getElementById('article')
+    const commentsSection = document.getElementById('comments-section')
+    const commentsDiv = document.getElementById('comments')
+    const commentForm = document.getElementById('commentForm')
 
-        if (!articleId) {
-            articleContent.innerHTML = '<h1>Error</h1><p>No article ID provided in URL.</p>'
-        } else {
-            loadArticle()
-            loadComments()
+    const urlParams = new URLSearchParams(window.location.search)
+    const articleId = urlParams.get('id')
+
+    if (!articleId) {
+        articleDiv.innerHTML = '<p>Article not found</p>'
+    } else {
+        await loadArticle()
+        await loadComments()
+        
+        if (user) {
+            commentForm.classList.remove('hidden')
+        }
+    }
+
+    async function loadArticle() {
+        const { data: article, error } = await supabase
+        .from('articles')
+        .select('*')
+        .eq('id', articleId)
+        .single()
+
+        if (error ||!article) {
+            articleDiv.innerHTML = '<p>Error loading article</p>'
+            return
         }
 
-        if (user) commentForm.classList.remove('hidden')
+        // Get likes count
+        const { data: likes } = await supabase
+        .from('likes')
+        .select('user_id')
+        .eq('article_id', articleId)
 
-        async function loadArticle() {
-            const { data, error } = await supabase
-               .from('articles')
-               .select('*')
-               .eq('id', articleId)
-               .single()
+        const likeCount = likes?.length || 0
+        const isLiked = user && likes?.some(l => l.user_id === user.id)
 
-            if (error) {
-                articleContent.innerHTML = `<h1>Error</h1><p>Could not load article: ${error.message}</p>`
-            } else {
-                document.title = `${data.title} - CEM Hub`
-                articleContent.innerHTML = `
-                    <article>
-                        <h1>${data.title}</h1>
-                        <div id="authorActions" class="hidden">
-                            <a id="editArticleBtn" href="post-article.html?edit=${articleId}">Edit Article</a>
-                        </div>
-                        <div class="article-meta">
-                            <small>By ${data.author_name || data.author_email || 'Anonymous'} •
-                            Published: ${new Date(data.created_at).toLocaleDateString()}</small>
-                        </div>
-                        <div class="article-body">
-                            ${data.content.replace(/\n/g, '<br>')}
-                        </div>
-                        <p style="margin-top:20px;"><a href="blog.html">← Back to Blog</a></p>
-                    </article>
-                `
-
-                // Show edit button if user is the author
-                if (user && data.author_id === user.id) {
-                    document.getElementById('authorActions').classList.remove('hidden')
-                }
-            }
-        }
-
-        async function loadComments() {
-            const { data: comments, error } = await supabase
-            .from('comments')
-            .select('*')
-            .eq('article_id', articleId)
-            .order('created_at', { ascending: true })
-
-            if (error) {
-                commentsList.innerHTML = `<p style="color:red">Error loading comments: ${error.message}</p>`
-                return
-            }
-
-            if (!comments || comments.length === 0) {
-                commentsList.innerHTML = '<p>No comments yet. Be the first!</p>'
-                return
-            }
-
-            commentsList.innerHTML = comments.map(comment => `
-                <div class="comment" data-id="${comment.id}">
-                    <div class="comment-meta">
-                        <strong>${comment.author_name || comment.author_email || 'Anonymous'}</strong> •
-                        ${new Date(comment.created_at).toLocaleString()}
-                    </div>
-                    <p>${comment.content}</p>
-                    ${user && user.id === comment.user_id?
-                      `<button class="deleteCommentBtn" data-id="${comment.id}">Delete</button>` : ''}
+        articleDiv.innerHTML = `
+            ${article.cover_image_url? `
+                <div class="article-hero">
+                    <img src="${article.cover_image_url}" alt="${article.title}">
                 </div>
-            `).join('')
+            ` : ''}
+            
+            <article class="article-full">
+                ${article.category? `<span class="category-badge">${article.category}</span>` : ''}
+                
+                <h1>${article.title}</h1>
+                
+                ${article.excerpt? `<p class="article-excerpt">${article.excerpt}</p>` : ''}
+                
+                <div class="meta">
+                    By <a href="profile.html?user=${article.author_id}">${article.author_name || article.author_email || 'Anonymous'}</a> • 
+                    Posted ${new Date(article.created_at).toLocaleDateString()}
+                </div>
 
-            if (window.location.hash === '#comments') {
-                document.getElementById('commentsSection').scrollIntoView()
-            }
-        }
+                <div class="actions">
+                    <button class="action-btn likeBtn ${isLiked? 'liked' : ''}" data-id="${article.id}">
+                        ${isLiked? '❤️' : '🤍'} ${likeCount}
+                    </button>
+                    ${user && user.id === article.author_id? `
+                        <a class="action-btn" href="post-article.html?edit=${article.id}">
+                            ✏️ Edit
+                        </a>
+                        <button class="action-btn delete-btn deleteBtn" data-id="${article.id}">
+                            🗑️ Delete
+                        </button>
+                    ` : ''}
+                </div>
 
-        document.getElementById('postCommentBtn')?.addEventListener('click', async () => {
-            const commentText = document.getElementById('commentText')
-            const commentMsg = document.getElementById('commentMsg')
-            const content = commentText.value.trim()
+                <div class="article-content-full">
+                    ${article.content}
+                </div>
+            </article>
+        `
 
-            if (!content) {
-                commentMsg.textContent = 'Comment cannot be empty'
+        commentsSection.classList.remove('hidden')
+
+        // Handle like button
+        document.querySelector('.likeBtn')?.addEventListener('click', async (e) => {
+            if (!user) {
+                alert('Log in to like articles')
                 return
             }
 
-            commentMsg.textContent = 'Posting...'
-
-            const { error } = await supabase.from('comments').insert({
-                article_id: articleId,
-                user_id: user.id,
-                author_email: user.email,
-                author_name: user.user_metadata?.full_name || user.email.split('@')[0],
-                content: content
-            })
-
-            if (error) {
-                commentMsg.textContent = `Error: ${error.message}`
-            } else {
-                commentText.value = ''
-                commentMsg.textContent = ''
-                await loadComments()
-            }
+            const btn = e.target.closest('button')
+            const isLiked = btn.classList.contains('liked')
+            
+            const { error } = isLiked 
+            ? await supabase.from('likes').delete().eq('user_id', user.id).eq('article_id', articleId)
+              : await supabase.from('likes').insert({ user_id: user.id, article_id: articleId })
+            
+            if (error) alert(`Like error: ${error.message}`)
+            else await loadArticle()
         })
 
-        commentsList.addEventListener('click', async (e) => {
-            if (e.target.classList.contains('deleteCommentBtn')) {
-                const id = e.target.dataset.id
-                if (!confirm('Delete this comment?')) return
-
-                const { error } = await supabase.from('comments').delete().eq('id', id)
-                if (error) alert(`Error: ${error.message}`)
-                else await loadComments()
-            }
+        // Handle delete
+        document.querySelector('.deleteBtn')?.addEventListener('click', async () => {
+            if (!confirm('Delete this article?')) return
+            const { error } = await supabase.from('articles').delete().eq('id', articleId)
+            if (error) alert(`Error: ${error.message}`)
+            else window.location.href = 'blog.html'
         })
+    }
+
+    async function loadComments() {
+        const { data: comments, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('article_id', articleId)
+        .order('created_at', { ascending: true })
+
+        if (error) {
+            commentsDiv.innerHTML = '<p>Error loading comments</p>'
+            return
+        }
+
+        if (!comments || comments.length === 0) {
+            commentsDiv.innerHTML = '<p>No comments yet. Be the first!</p>'
+            return
+        }
+
+        commentsDiv.innerHTML = comments.map(comment => `
+            <div class="comment">
+                <div class="comment-meta">
+                    <strong>${comment.author_name || comment.author_email || 'Anonymous'}</strong> • 
+                    ${new Date(comment.created_at).toLocaleDateString()}
+                </div>
+                <p>${comment.content}</p>
+            </div>
+        `).join('')
+    }
+
+    // Post comment
+    document.getElementById('postCommentBtn')?.addEventListener('click', async () => {
+        const content = document.getElementById('commentText').value
+        const msg = document.getElementById('commentMsg')
+
+        if (!content) {
+            msg.textContent = 'Comment cannot be empty'
+            return
+        }
+
+        const { error } = await supabase.from('comments').insert({
+            article_id: articleId,
+            content,
+            author_id: user.id,
+            author_email: user.email,
+            author_name: user.user_metadata?.full_name || user.email.split('@')[0]
+        })
+
+        if (error) {
+            msg.textContent = `Error: ${error.message}`
+        } else {
+            msg.textContent = 'Posted!'
+            document.getElementById('commentText').value = ''
+            await loadComments()
+            setTimeout(() => msg.textContent = '', 2000)
+        }
+    })
     </script>
 </body>
     </html>
