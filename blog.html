@@ -94,25 +94,38 @@
     function renderArticles(articles) {
         articlesDiv.innerHTML = articles.map(article => `
             <article class="article" data-id="${article.id}">
-                <h3><a href="article.html?id=${article.id}">${article.title}</a></h3>
-                <div class="meta">
-                    By <a href="profile.html?user=${article.author_id}">${article.author_name || article.author_email || 'Anonymous'}</a> • 
-                    Posted ${new Date(article.created_at).toLocaleDateString()}
-                </div>
-                <p>${article.content.substring(0, 150)}...</p>
-                <div class="actions">
-                    <button class="action-btn likeBtn ${article.isLiked? 'liked' : ''}" data-id="${article.id}">
-                        ${article.isLiked? '❤️' : '🤍'} ${article.likeCount}
-                    </button>
-                    <a class="action-btn" href="article.html?id=${article.id}#comments">💬 ${article.commentCount}</a>
-                    ${user && user.id === article.author_id? `
-                        <a class="action-btn" href="post-article.html?edit=${article.id}">
-                            ✏️ Edit
-                        </a>
-                        <button class="action-btn delete-btn deleteBtn" data-id="${article.id}">
-                            🗑️ Delete
+                ${article.cover_image_url ? `
+                    <a href="article.html?id=${article.id}">
+                        <img src="${article.cover_image_url}" alt="${article.title}" class="article-cover">
+                    </a>
+                ` : ''}
+                
+                <div class="article-content">
+                    ${article.category ? `<span class="category-badge">${article.category}</span>` : ''}
+                    
+                    <h3><a href="article.html?id=${article.id}">${article.title}</a></h3>
+                    
+                    <div class="meta">
+                        By <a href="profile.html?user=${article.author_id}">${article.author_name || article.author_email || 'Anonymous'}</a> • 
+                        Posted ${new Date(article.created_at).toLocaleDateString()}
+                    </div>
+                    
+                    <p>${article.excerpt || article.content.substring(0, 150)}...</p>
+                    
+                    <div class="actions">
+                        <button class="action-btn likeBtn ${article.isLiked? 'liked' : ''}" data-id="${article.id}">
+                            ${article.isLiked? '❤️' : '🤍'} ${article.likeCount}
                         </button>
-                    ` : ''}
+                        <a class="action-btn" href="article.html?id=${article.id}#comments">💬 ${article.commentCount}</a>
+                        ${user && user.id === article.author_id? `
+                            <a class="action-btn" href="post-article.html?edit=${article.id}">
+                                ✏️ Edit
+                            </a>
+                            <button class="action-btn delete-btn deleteBtn" data-id="${article.id}">
+                                🗑️ Delete
+                            </button>
+                        ` : ''}
+                    </div>
                 </div>
             </article>
         `).join('')
