@@ -10,7 +10,10 @@
     <main>
         <div class="blog-header">
             <h1>Latest Articles</h1>
-            <a href="post-article.html" id="createBtn" class="hidden">+ Create Article</a>
+            <div class="blog-actions">
+                <a href="profile.html" id="editProfileBtn" class="hidden">👤 Edit Profile</a>
+                <a href="post-article.html" id="createBtn" class="hidden">+ Create Article</a>
+            </div>
         </div>
         
         <div id="categoryFilter" class="category-filter">
@@ -26,6 +29,7 @@
 
     const user = await initLayout()
     const createBtn = document.getElementById('createBtn')
+    const editProfileBtn = document.getElementById('editProfileBtn')
     const articlesDiv = document.getElementById('articles')
     const categoryFilter = document.getElementById('categoryFilter')
     let currentCategory = 'all'
@@ -39,6 +43,8 @@
 
     if (user) {
         createBtn.classList.remove('hidden')
+        editProfileBtn.classList.remove('hidden')
+        editProfileBtn.href = `profile.html?user=${user.id}`
     }
 
     async function loadCategories() {
@@ -105,7 +111,12 @@
                     <h3><a href="article.html?id=${article.id}">${article.title}</a></h3>
                     
                     <div class="meta">
-                        By <a href="profile.html?user=${article.author_id}">${article.author_name || article.author_email || 'Anonymous'}</a> • 
+                        <a href="profile.html?user=${article.author_id}" class="author-link">
+                            ${article.author_avatar? `
+                                <img src="${article.author_avatar}" alt="${article.author_name}" class="author-avatar-small">
+                            ` : '<span class="author-avatar-placeholder">👤</span>'}
+                            <span>By ${article.author_name || article.author_email || 'Anonymous'}</span>
+                        </a> • 
                         Posted ${new Date(article.created_at).toLocaleDateString()}
                     </div>
                     
@@ -147,6 +158,15 @@
                 return
             }
 
+            // Get unique author IDs
+            const authorIds = [...new Set(articles.map(a => a.author_id).filter(Boolean))]
+            
+            // Fetch author profiles for avatars
+            const { data: profiles } = await supabase
+                .from('profiles')
+                .select('id, username, avatar_url')
+                .in('id', authorIds)
+
             const { data: likes, error: likesError } = await supabase
                 .from('likes')
                 .select('article_id, user_id')
@@ -171,7 +191,13 @@
                 const likeCount = likes?.filter(l => l.article_id === article.id).length || 0
                 const commentCount = comments?.filter(c => c.article_id === article.id).length || 0
                 const isLiked = userLikes.includes(article.id)
-                return {...article, likeCount, commentCount, isLiked }
+                
+                // Get author profile data
+                const authorProfile = profiles?.find(p => p.id === article.author_id)
+                const author_avatar = authorProfile?.avatar_url || null
+                const author_name = authorProfile?.username || article.author_name || article.author_email
+                
+                return {...article, likeCount, commentCount, isLiked, author_avatar, author_name }
             })
 
             renderArticles(allArticles)
@@ -213,4 +239,4 @@
     })
     </script>
 </body>
-</html>
+    </html>
