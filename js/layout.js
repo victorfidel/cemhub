@@ -63,10 +63,13 @@ export async function initLayout() {
         notifDropdown.classList.add('hidden') // Close notifs if hamburger opens
     }
     
-    // Close hamburger when clicking outside
+    // Close menus when clicking outside
     document.addEventListener('click', (e) => {
         if (!navMenu.contains(e.target) && e.target !== hamburgerBtn) {
             navMenu.classList.add('hidden')
+        }
+        if (!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) {
+            notifDropdown.classList.add('hidden')
         }
     })
 
@@ -75,7 +78,8 @@ export async function initLayout() {
         loginBtn.classList.add('hidden')
         logoutBtn.classList.remove('hidden')
         notifBtn.classList.remove('hidden')
-        loadNotifications()
+        
+        await loadNotifications() // Added await here
 
         notifChannel = supabase.channel(`notifications:${currentUser.id}`)
          .on('postgres_changes', { 
@@ -91,12 +95,6 @@ export async function initLayout() {
             notifDropdown.classList.toggle('hidden')
             navMenu.classList.add('hidden') // Close hamburger if notif opens
         }
-
-        document.addEventListener('click', (e) => {
-            if (!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) {
-                notifDropdown.classList.add('hidden')
-            }
-        })
 
     } else {
         userEmail.textContent = ''
@@ -120,7 +118,12 @@ export async function initLayout() {
            .order('created_at', { ascending: false })
            .limit(10)
         
-        if (error) return console.error(error)
+        if (error) {
+            console.error('Notification error:', error)
+            return
+        }
+        
+        console.log('Notifications loaded:', notifs) // Debug line
         
         const unread = notifs.filter(n => !n.is_read).length
         if (unread > 0) {
@@ -147,11 +150,11 @@ export async function initLayout() {
                 const articleId = item.dataset.article
                 await supabase.from('notifications').update({ is_read: true }).eq('id', id)
                 notifDropdown.classList.add('hidden')
-                if (articleId) window.location.href = `./article.html?id=${articleId}`
-                else loadNotifications()
+                if (articleId && articleId !== 'null') window.location.href = `./article.html?id=${articleId}`
+                else await loadNotifications()
             }
         })
     }
 
     return currentUser // Return user so pages can use it
-      }
+        }
