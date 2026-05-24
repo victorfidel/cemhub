@@ -1,3 +1,4 @@
+alert('BLOG.JS UPDATED - VERSION 3')
 import { supabase } from './supabase.js'
 import { initLayout } from './layout.js'
 
