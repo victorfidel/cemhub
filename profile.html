@@ -7,36 +7,262 @@
     <link rel="stylesheet" href="./CSS/style.css">
 </head>
 <body>
-   <header>
-    <h1><a href="./index.html">CEM Hub</a></h1>
-    <nav>
-        <button id="notifBtn" class="hidden">🔔 <span id="notifCount"></span></button>
-        <span id="userEmail"></span>
-        <button id="loginBtn">Login</button>
-        <button id="logoutBtn" class="hidden">Logout</button>
-    </nav>
-</header>
-<div id="notifDropdown" class="hidden"></div>
-
     <main>
         <div id="profileHeader" class="profile-header">
-            <h2 id="profileUsername">Loading...</h2>
-            <p id="profileBio"></p>
+            <div class="profile-info">
+                <div id="profileAvatar" class="profile-avatar">
+                    <img id="avatarImg" src="" alt="Profile" class="hidden">
+                    <div id="avatarPlaceholder" class="avatar-placeholder">👤</div>
+                </div>
+                <div class="profile-details">
+                    <h2 id="profileUsername">Loading...</h2>
+                    <p id="profileBio"></p>
+                    <div id="profileMeta" class="profile-meta"></div>
+                </div>
+            </div>
             <button id="editProfileBtn" class="hidden">Edit Profile</button>
         </div>
 
-        <div id="editProfileForm" class="hidden post-form">
+        <div id="editProfileForm" class="hidden">
             <h3>Edit Profile</h3>
-            <input type="text" id="editUsername" placeholder="Username">
-            <textarea id="editBio" placeholder="Bio" rows="3"></textarea>
-            <button id="saveProfileBtn">Save</button>
-            <button id="cancelProfileBtn">Cancel</button>
+            <div class="form-group">
+                <label>Profile Photo</label>
+                <input type="file" id="avatarUpload" accept="image/*">
+                <div id="avatarPreview" class="hidden">
+                    <img id="previewImg" src="" alt="Preview">
+                    <button id="removeAvatarBtn">Remove</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="editUsername" placeholder="Username">
+            </div>
+            <div class="form-group">
+                <label>Bio</label>
+                <textarea id="editBio" placeholder="Tell us about yourself..." rows="4"></textarea>
+            </div>
+            <div class="form-actions">
+                <button id="saveProfileBtn">Save Changes</button>
+                <button id="cancelProfileBtn">Cancel</button>
+            </div>
+            <div id="profileMsg"></div>
         </div>
 
-        <h3>Posts by <span id="postsByUser"></span></h3>
-        <div id="userArticles"></div>
+        <section class="user-posts">
+            <h3>Posts by <span id="postsByUser"></span></h3>
+            <div id="userArticles">Loading...</div>
+        </section>
     </main>
 
-    <script type="module" src="./js/profile.js"></script>
+    <script type="module">
+    import { supabase } from './js/supabase.js'
+    import { initLayout } from './js/layout.js'
+
+    const user = await initLayout()
+    const urlParams = new URLSearchParams(window.location.search)
+    const profileUserId = urlParams.get('user') || user?.id
+
+    const profileUsername = document.getElementById('profileUsername')
+    const profileBio = document.getElementById('profileBio')
+    const profileMeta = document.getElementById('profileMeta')
+    const postsByUser = document.getElementById('postsByUser')
+    const userArticles = document.getElementById('userArticles')
+    const editProfileBtn = document.getElementById('editProfileBtn')
+    const editProfileForm = document.getElementById('editProfileForm')
+    const avatarImg = document.getElementById('avatarImg')
+    const avatarPlaceholder = document.getElementById('avatarPlaceholder')
+
+    let profileData = null
+    let isOwnProfile = false
+
+    if (!profileUserId) {
+        profileUsername.textContent = 'No user selected'
+        userArticles.innerHTML = '<p>Please select a user profile to view.</p>'
+    } else {
+        isOwnProfile = user && user.id === profileUserId
+        await loadProfile()
+        await loadUserPosts()
+        
+        if (isOwnProfile) {
+            editProfileBtn.classList.remove('hidden')
+        }
+    }
+
+    async function loadProfile() {
+        // Try to get from profiles table first
+        let { data: profile, error } = await supabase
+           .from('profiles')
+           .select('*')
+           .eq('id', profileUserId)
+           .single()
+
+        // Fallback: get info from articles if no profile table yet
+        if (error ||!profile) {
+            const { data: articles } = await supabase
+               .from('articles')
+               .select('author_name, author_email')
+               .eq('author_id', profileUserId)
+               .limit(1)
+               .single()
+            
+            profile = {
+                id: profileUserId,
+                username: articles?.author_name || articles?.author_email?.split('@')[0] || 'Anonymous',
+                bio: '',
+                avatar_url: null,
+                email: articles?.author_email
+            }
+        }
+
+        profileData = profile
+        
+        // Display profile
+        profileUsername.textContent = profile.username || 'Anonymous'
+        profileBio.textContent = profile.bio || 'No bio yet.'
+        postsByUser.textContent = profile.username || 'this user'
+        
+        // Avatar
+        if (profile.avatar_url) {
+            avatarImg.src = profile.avatar_url
+            avatarImg.classList.remove('hidden')
+            avatarPlaceholder.classList.add('hidden')
+        } else {
+            avatarImg.classList.add('hidden')
+            avatarPlaceholder.classList.remove('hidden')
+        }
+
+        // Meta: join date, post count
+        const { data: postCount } = await supabase
+           .from('articles')
+           .select('id', { count: 'exact' })
+           .eq('author_id', profileUserId)
+        
+        const joinDate = profile.created_at? new Date(profile.created_at).toLocaleDateString() : 'Unknown'
+        profileMeta.innerHTML = `${postCount?.length || 0} posts • Joined ${joinDate}`
+    }
+
+    async function loadUserPosts() {
+        const { data: articles, error } = await supabase
+           .from('articles')
+           .select('*')
+           .eq('author_id', profileUserId)
+           .order('created_at', { ascending: false })
+
+        if (error) {
+            userArticles.innerHTML = '<p>Error loading posts</p>'
+            return
+        }
+
+        if (!articles || articles.length === 0) {
+            userArticles.innerHTML = '<p>No posts yet.</p>'
+            return
+        }
+
+        userArticles.innerHTML = articles.map(article => `
+            <article class="article">
+                ${article.cover_image_url? `
+                    <a href="article.html?id=${article.id}" class="article-cover-wrapper">
+                        <img src="${article.cover_image_url}" alt="${article.title}" class="article-cover">
+                    </a>
+                ` : ''}
+                <div class="article-content">
+                    ${article.category? `<span class="category-badge">${article.category}</span>` : ''}
+                    <h3><a href="article.html?id=${article.id}">${article.title}</a></h3>
+                    <div class="meta">Posted ${new Date(article.created_at).toLocaleDateString()}</div>
+                    <p>${article.excerpt || article.content.substring(0, 150)}...</p>
+                </div>
+            </article>
+        `).join('')
+    }
+
+    // Edit Profile
+    editProfileBtn?.addEventListener('click', () => {
+        document.getElementById('editUsername').value = profileData.username || ''
+        document.getElementById('editBio').value = profileData.bio || ''
+        editProfileForm.classList.remove('hidden')
+        editProfileBtn.classList.add('hidden')
+        
+        if (profileData.avatar_url) {
+            document.getElementById('previewImg').src = profileData.avatar_url
+            document.getElementById('avatarPreview').classList.remove('hidden')
+        }
+    })
+
+    document.getElementById('cancelProfileBtn')?.addEventListener('click', () => {
+        editProfileForm.classList.add('hidden')
+        editProfileBtn.classList.remove('hidden')
+    })
+
+    document.getElementById('avatarUpload')?.addEventListener('change', async (e) => {
+        const file = e.target.files[0]
+        if (file) {
+            const reader = new FileReader()
+            reader.onload = (e) => {
+                document.getElementById('previewImg').src = e.target.result
+                document.getElementById('avatarPreview').classList.remove('hidden')
+            }
+            reader.readAsDataURL(file)
+        }
+    })
+
+    document.getElementById('removeAvatarBtn')?.addEventListener('click', () => {
+        document.getElementById('avatarUpload').value = ''
+        document.getElementById('avatarPreview').classList.add('hidden')
+    })
+
+    document.getElementById('saveProfileBtn')?.addEventListener('click', async () => {
+        const username = document.getElementById('editUsername').value.trim()
+        const bio = document.getElementById('editBio').value.trim()
+        const avatarFile = document.getElementById('avatarUpload').files[0]
+        const msg = document.getElementById('profileMsg')
+
+        if (!username) {
+            msg.textContent = 'Username cannot be empty'
+            return
+        }
+
+        let avatar_url = profileData.avatar_url
+
+        // Upload new avatar if selected
+        if (avatarFile) {
+            const fileExt = avatarFile.name.split('.').pop()
+            const fileName = `${user.id}-${Date.now()}.${fileExt}`
+            
+            const { error: uploadError } = await supabase.storage
+               .from('avatars')
+               .upload(fileName, avatarFile)
+
+            if (uploadError) {
+                msg.textContent = `Upload error: ${uploadError.message}`
+                return
+            }
+
+            const { data } = supabase.storage.from('avatars').getPublicUrl(fileName)
+            avatar_url = data.publicUrl
+        }
+
+        // Upsert profile
+        const { error } = await supabase
+           .from('profiles')
+           .upsert({
+                id: user.id,
+                username,
+                bio,
+                avatar_url,
+                email: user.email
+            })
+
+        if (error) {
+            msg.textContent = `Error: ${error.message}`
+        } else {
+            msg.textContent = 'Profile updated!'
+            setTimeout(() => {
+                editProfileForm.classList.add('hidden')
+                editProfileBtn.classList.remove('hidden')
+                loadProfile()
+            }, 1000)
+        }
+    })
+    </script>
 </body>
-</html>
+                </html>
