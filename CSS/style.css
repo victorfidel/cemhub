@@ -39,7 +39,7 @@ main {
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
-  z-index: 999;
+  z-index: 1000;
 }
 
 #siteHeader nav {
@@ -256,7 +256,7 @@ textarea { height: 120px; resize: vertical; }
 
 .hidden { display: none !important; }
 
-/* Hamburger Menu - UPDATED WITH X ANIMATION */
+/* Hamburger Menu - X ANIMATION */
 .hamburger {
   width: 28px;
   height: 22px;
@@ -306,20 +306,22 @@ textarea { height: 120px; resize: vertical; }
   transform: rotate(-135deg);
 }
 
-/* Slide Menu From Left - UPDATED */
+/* Slide Menu From Left - BRANDED + COMPACT HEIGHT */
 .nav-menu {
   position: fixed;
-  top: 0;
+  top: 60px;
   left: -280px;
   width: 280px;
-  height: 100vh;
-  background: var(--card);
-  border-right: 1px solid var(--border);
-  box-shadow: 2px 0 15px rgba(0,0,0,0.1);
-  padding: 5rem 0 1rem 0;
-  z-index: 1000;
+  height: auto;
+  max-height: calc(100vh - 80px);
+  background: var(--primary);
+  border-right: 3px solid var(--accent);
+  box-shadow: 2px 0 15px rgba(0,0,0,0.2);
+  padding: 1rem 0 1.5rem 0;
+  z-index: 998;
   transition: left 0.3s ease;
   overflow-y: auto;
+  border-radius: 0 0 var(--radius) 0;
 }
 
 .nav-menu.active {
@@ -330,30 +332,30 @@ textarea { height: 120px; resize: vertical; }
   display: block;
   padding: 1rem 1.5rem;
   text-decoration: none;
-  color: var(--text);
+  color: white;
   font-weight: 500;
   transition: all 0.2s;
   border-left: 3px solid transparent;
 }
 
 .nav-menu a:hover {
-  background: var(--bg);
-  color: var(--primary);
+  background: var(--primary-dark);
+  color: var(--accent);
   border-left-color: var(--accent);
 }
 
-/* Menu Overlay - NEW */
+/* Menu Overlay */
 .menu-overlay {
   position: fixed;
-  top: 0;
+  top: 60px;
   left: 0;
   width: 100%;
-  height: 100%;
+  height: calc(100vh - 60px);
   background: rgba(0,0,0,0.5);
   opacity: 0;
   visibility: hidden;
   transition: all 0.3s ease;
-  z-index: 999;
+  z-index: 997;
 }
 
 .menu-overlay.active {
