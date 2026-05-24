@@ -49,30 +49,40 @@
 
     async function loadArticle() {
         const { data: article, error } = await supabase
-        .from('articles')
-        .select('*')
-        .eq('id', articleId)
-        .single()
+       .from('articles')
+       .select('*')
+       .eq('id', articleId)
+       .single()
 
         if (error ||!article) {
             articleDiv.innerHTML = '<p>Error loading article</p>'
             return
         }
 
+        // Fetch author profile for avatar + username
+        const { data: authorProfile } = await supabase
+       .from('profiles')
+       .select('username, avatar_url')
+       .eq('id', article.author_id)
+       .single()
+
         const { data: likes } = await supabase
-        .from('likes')
-        .select('user_id')
-        .eq('article_id', articleId)
+       .from('likes')
+       .select('user_id')
+       .eq('article_id', articleId)
 
         const { data: comments } = await supabase
-        .from('comments')
-        .select('id')
-        .eq('article_id', articleId)
+       .from('comments')
+       .select('id')
+       .eq('article_id', articleId)
 
         const likeCount = likes?.length || 0
         const commentCount = comments?.length || 0
         const isLiked = user && likes?.some(l => l.user_id === user.id)
         const currentUrl = window.location.href
+        
+        const author_name = authorProfile?.username || article.author_name || article.author_email || 'Anonymous'
+        const author_avatar = authorProfile?.avatar_url
 
         articleDiv.innerHTML = `
             ${article.cover_image_url? `
@@ -89,7 +99,12 @@
                 ${article.excerpt? `<p class="article-excerpt">${article.excerpt}</p>` : ''}
                 
                 <div class="meta">
-                    By <a href="profile.html?user=${article.author_id}">${article.author_name || article.author_email || 'Anonymous'}</a> • 
+                    <a href="profile.html?user=${article.author_id}" class="author-link">
+                        ${author_avatar? `
+                            <img src="${author_avatar}" alt="${author_name}" class="author-avatar-small">
+                        ` : '<span class="author-avatar-placeholder">👤</span>'}
+                        <span>By ${author_name}</span>
+                    </a> • 
                     Posted ${new Date(article.created_at).toLocaleDateString()}
                 </div>
 
@@ -135,7 +150,7 @@
             const isLiked = btn.classList.contains('liked')
             
             const { error } = isLiked 
-            ? await supabase.from('likes').delete().eq('user_id', user.id).eq('article_id', articleId)
+           ? await supabase.from('likes').delete().eq('user_id', user.id).eq('article_id', articleId)
               : await supabase.from('likes').insert({ user_id: user.id, article_id: articleId })
             
             if (error) alert(`Like error: ${error.message}`)
@@ -159,10 +174,10 @@
 
     async function loadComments() {
         const { data: comments, error } = await supabase
-        .from('comments')
-        .select('*')
-        .eq('article_id', articleId)
-        .order('created_at', { ascending: true })
+       .from('comments')
+       .select('*')
+       .eq('article_id', articleId)
+       .order('created_at', { ascending: true })
 
         if (error) {
             commentsDiv.innerHTML = '<p>Error loading comments</p>'
@@ -174,15 +189,32 @@
             return
         }
 
-        commentsDiv.innerHTML = comments.map(comment => `
+        // Get comment author avatars
+        const authorIds = [...new Set(comments.map(c => c.author_id).filter(Boolean))]
+        const { data: profiles } = await supabase
+       .from('profiles')
+       .select('id, username, avatar_url')
+       .in('id', authorIds)
+
+        commentsDiv.innerHTML = comments.map(comment => {
+            const authorProfile = profiles?.find(p => p.id === comment.author_id)
+            const author_name = authorProfile?.username || comment.author_name || comment.author_email || 'Anonymous'
+            const author_avatar = authorProfile?.avatar_url
+            
+            return `
             <div class="comment">
                 <div class="comment-meta">
-                    <strong>${comment.author_name || comment.author_email || 'Anonymous'}</strong> • 
+                    <a href="profile.html?user=${comment.author_id}" class="author-link">
+                        ${author_avatar? `
+                            <img src="${author_avatar}" alt="${author_name}" class="author-avatar-small">
+                        ` : '<span class="author-avatar-placeholder">👤</span>'}
+                        <strong>${author_name}</strong>
+                    </a> • 
                     ${new Date(comment.created_at).toLocaleDateString()}
                 </div>
                 <p>${comment.content}</p>
             </div>
-        `).join('')
+        `}).join('')
     }
 
     document.getElementById('postCommentBtn')?.addEventListener('click', async () => {
@@ -214,4 +246,4 @@
     })
     </script>
 </body>
-</html>
+    </html>
