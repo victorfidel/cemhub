@@ -1,7 +1,7 @@
 import { supabase } from './supabase.js'
 import { initLayout } from './layout.js'
 
-const currentUser = await initLayout() // Loads header, auth, notifications
+const currentUser = await initLayout()
 
 const postForm = document.getElementById('postForm')
 const postBtn = document.getElementById('postBtn')
@@ -32,7 +32,6 @@ postBtn.onclick = async () => {
 
     msg.textContent = 'Publishing...'
 
-    // Get profile for author name
     const { data: profile } = await supabase
 .from('profiles')
 .select('username, full_name')
@@ -69,18 +68,6 @@ function avatarHTML(url, size = 32) {
     return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:#ddd;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;vertical-align:middle;">👤</div>`
 }
 
-function getExcerpt(text, maxLength) {
-    if (!text) return { text: '', needsReadMore: false }
-    const stripped = text.replace(/<[^>]*>/g, '').replace(/\n/g, ' ').trim()
-    if (stripped.length <= maxLength) {
-        return { text: stripped, needsReadMore: false }
-    }
-    return { 
-        text: stripped.substring(0, maxLength), 
-        needsReadMore: true 
-    }
-}
-
 async function loadArticles() {
     articlesDiv.innerHTML = 'Loading...'
 
@@ -115,7 +102,9 @@ async function loadArticles() {
         const avatar = avatarHTML(article.profiles?.avatar_url)
         const authorLink = `<a href="./profile.html?id=${article.user_id}">${avatar}${username}</a>`
         
-        const { text: excerpt, needsReadMore } = getExcerpt(article.content, EXCERPT_LENGTH)
+        const cleanContent = article.content?.replace(/<[^>]*>/g, '').replace(/\n/g, ' ').trim() || ''
+        const isTruncated = cleanContent.length >= EXCERPT_LENGTH
+        const excerpt = isTruncated? cleanContent.substring(0, EXCERPT_LENGTH) : cleanContent
 
         return `
         <div class="article" data-id="${article.id}">
@@ -128,9 +117,7 @@ async function loadArticles() {
                 ${article.category? `<span class="category-badge">${article.category}</span>` : `<span class="category-badge">Featured</span>`}
                 <h3><a href="./article.html?id=${article.id}">${article.title}</a></h3>
                 <div class="meta">By ${authorLink} • Posted ${new Date(article.created_at).toLocaleDateString()}</div>
-                ${excerpt? `
-                <p class="article-excerpt">${excerpt}${needsReadMore? `... <a href="./article.html?id=${article.id}" class="read-more-link">Read more</a>` : ''}</p>
-                ` : ''}
+                ${cleanContent? `<p class="article-excerpt">${excerpt}${isTruncated? `... <a href="./article.html?id=${article.id}" class="read-more-link">Read more</a>` : ''}</p>` : ''}
                 <div class="actions">
                     <button class="likeBtn action-btn ${userLiked? 'liked' : ''}" data-id="${article.id}" ${!currentUser? 'disabled' : ''}>
                         ${userLiked? '❤️' : '🤍'} ${likeCount}
@@ -284,9 +271,9 @@ function editComment(commentId) {
         const newContent = contentDiv.querySelector('.editCommentInput').value
 
         const { error } = await supabase
- .from('comments')
- .update({ content: newContent })
- .eq('id', commentId)
+.from('comments')
+.update({ content: newContent })
+.eq('id', commentId)
 
         if (error) alert(error.message)
         else loadArticles()
