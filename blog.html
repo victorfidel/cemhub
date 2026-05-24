@@ -97,7 +97,14 @@
             return
         }
 
-        articlesDiv.innerHTML = articles.map(article => `
+        const EXCERPT_LENGTH = 100
+
+        articlesDiv.innerHTML = articles.map(article => {
+            const cleanContent = article.content?.replace(/<[^>]*>/g, '').replace(/\n/g, ' ').trim() || ''
+            const isTruncated = cleanContent.length > EXCERPT_LENGTH
+            const excerpt = isTruncated? cleanContent.substring(0, EXCERPT_LENGTH) : cleanContent
+            
+            return `
             <article class="article" data-id="${article.id}">
                 ${article.cover_image_url? `
                     <a href="article.html?id=${article.id}" class="article-cover-wrapper">
@@ -120,7 +127,7 @@
                         Posted ${new Date(article.created_at).toLocaleDateString()}
                     </div>
                     
-                    <p>${article.excerpt || article.content.substring(0, 150)}...</p>
+                    ${cleanContent? `<p class="article-excerpt">${excerpt}${isTruncated? `... <a href="article.html?id=${article.id}" class="read-more-link">Read more</a>` : ''}</p>` : ''}
                     
                     <div class="actions">
                         <button class="action-btn likeBtn ${article.isLiked? 'liked' : ''}" data-id="${article.id}">
@@ -138,7 +145,7 @@
                     </div>
                 </div>
             </article>
-        `).join('')
+        `}).join('')
     }
 
     async function loadArticles() {
