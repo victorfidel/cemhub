@@ -60,7 +60,7 @@ export async function initLayout() {
     hamburgerBtn.onclick = (e) => {
         e.stopPropagation()
         navMenu.classList.toggle('hidden')
-        notifDropdown.classList.add('hidden') // Close notifs if hamburger opens
+        notifDropdown.classList.add('hidden')
     }
     
     // Close menus when clicking outside
@@ -68,6 +68,7 @@ export async function initLayout() {
         if (!navMenu.contains(e.target) && e.target !== hamburgerBtn) {
             navMenu.classList.add('hidden')
         }
+        // Fixed: check if click is inside notifBtn or its children
         if (!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) {
             notifDropdown.classList.add('hidden')
         }
@@ -79,7 +80,8 @@ export async function initLayout() {
         logoutBtn.classList.remove('hidden')
         notifBtn.classList.remove('hidden')
         
-        await loadNotifications() // Added await here
+        console.log('Current user ID:', currentUser.id) // Debug
+        await loadNotifications()
 
         notifChannel = supabase.channel(`notifications:${currentUser.id}`)
          .on('postgres_changes', { 
@@ -87,13 +89,18 @@ export async function initLayout() {
               schema: 'public', 
               table: 'notifications',
               filter: `user_id=eq.${currentUser.id}`
-          }, () => loadNotifications())
+          }, (payload) => {
+              console.log('New notification:', payload)
+              loadNotifications()
+          })
          .subscribe()
 
         notifBtn.onclick = (e) => {
             e.stopPropagation()
+            e.preventDefault()
+            console.log('Bell clicked, toggling dropdown') // Debug
             notifDropdown.classList.toggle('hidden')
-            navMenu.classList.add('hidden') // Close hamburger if notif opens
+            navMenu.classList.add('hidden')
         }
 
     } else {
@@ -111,6 +118,7 @@ export async function initLayout() {
 
     async function loadNotifications() {
         if (!currentUser) return
+        
         const { data: notifs, error } = await supabase
            .from('notifications')
            .select('*')
@@ -123,14 +131,17 @@ export async function initLayout() {
             return
         }
         
-        console.log('Notifications loaded:', notifs) // Debug line
+        console.log('Loaded notifications for', currentUser.email, ':', notifs)
         
         const unread = notifs.filter(n => !n.is_read).length
+        notifCount.textContent = unread
+        
         if (unread > 0) {
-            notifCount.textContent = unread
             notifCount.classList.remove('hidden')
+            notifCount.style.display = 'inline-block'
         } else {
             notifCount.classList.add('hidden')
+            notifCount.style.display = 'none'
         }
         
         notifDropdown.innerHTML = notifs.length ? notifs.map(n => `
@@ -150,11 +161,14 @@ export async function initLayout() {
                 const articleId = item.dataset.article
                 await supabase.from('notifications').update({ is_read: true }).eq('id', id)
                 notifDropdown.classList.add('hidden')
-                if (articleId && articleId !== 'null') window.location.href = `./article.html?id=${articleId}`
-                else await loadNotifications()
+                if (articleId && articleId !== 'null' && articleId !== '') {
+                    window.location.href = `./article.html?id=${articleId}`
+                } else {
+                    await loadNotifications()
+                }
             }
         })
     }
 
-    return currentUser // Return user so pages can use it
-        }
+    return currentUser
+}
