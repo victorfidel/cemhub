@@ -1,154 +1,1026 @@
-// layout.js
-import { supabase } from './supabase.js'
+/* CEM Hub - Modern Base Styles */
+:root {
+  --primary: #0A2A5E;       /* Navy from logo */
+  --primary-dark: #061A3C;  /* Darker navy for hovers */
+  --accent: #C9A227;        /* Gold from logo */
+  --accent-dark: #A68520;   /* Darker gold for hovers */
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --radius: 8px;
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+}
 
-export async function initLayout() {
-    // Inject header if it doesn't exist
-    if (!document.getElementById('siteHeader')) {
-        document.body.insertAdjacentHTML('afterbegin', `
-            <header id="siteHeader">
-                <nav>
-                    <div class="nav-left">
-                        <button id="hamburgerBtn" class="hamburger">☰</button>
-                        <a href="./index.html" class="logo">CEM Hub</a>
-                        <div id="navMenu" class="nav-menu hidden">
-                            <a href="./index.html">Homepage</a>
-                            <a href="./blog.html">Blog</a>
-                            <a href="./founder.html">Founder</a>
-                            <a href="./donation.html">Donation</a>
-                            <a href="./hall-of-fame.html">Hall of Fame</a>
-                            <a href="./contact.html">Contact</a>
-                        </div>
-                    </div>
-                    <div class="nav-right">
-                        <span id="userEmail"></span>
-                        <button id="notifBtn" class="hidden">🔔 <span id="notifCount" class="hidden"></span></button>
-                        <div id="notifDropdown" class="hidden"></div>
-                        <button id="loginBtn" class="hidden">Login</button>
-                        <button id="logoutBtn" class="hidden">Logout</button>
-                    </div>
-                </nav>
-            </header>
-        `)
-    }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-    // Inject footer if it doesn't exist
-    if (!document.getElementById('siteFooter')) {
-        document.body.insertAdjacentHTML('beforeend', `
-            <footer id="siteFooter">
-                <p>© 2026 CEM Hub. All rights reserved.</p>
-            </footer>
-        `)
-    }
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
 
-    // Now run all the auth + notification logic
-    const userEmail = document.getElementById('userEmail')
-    const loginBtn = document.getElementById('loginBtn')
-    const logoutBtn = document.getElementById('logoutBtn')
-    const notifBtn = document.getElementById('notifBtn')
-    const notifCount = document.getElementById('notifCount')
-    const notifDropdown = document.getElementById('notifDropdown')
-    const hamburgerBtn = document.getElementById('hamburgerBtn')
-    const navMenu = document.getElementById('navMenu')
+/* Layout */
+main {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  flex: 1;
+}
 
-    let notifChannel = null
-    const { data: { session } } = await supabase.auth.getSession()
-    const currentUser = session?.user || null
+/* Header */
+#siteHeader {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 999;
+}
 
-    if (notifChannel) supabase.removeChannel(notifChannel)
+#siteHeader nav {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: none;
+  margin-bottom: 0;
+  overflow: visible;
+}
 
-    // Hamburger toggle logic
-    hamburgerBtn.onclick = (e) => {
-        e.stopPropagation()
-        navMenu.classList.toggle('hidden')
-        notifDropdown.classList.add('hidden') // Close notifs if hamburger opens
+.nav-left, .nav-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-left {
+  position: relative;
+}
+
+.nav-left a {
+  text-decoration: none;
+  color: var(--text-muted);
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.nav-left a:hover {
+  color: var(--accent);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary) !important;
+  text-decoration: none;
+}
+
+.logo:hover {
+  color: var(--primary-dark) !important;
+}
+
+.logo-img {
+  height: 32px;
+  width: auto;
+}
+
+.nav-right button, button {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.nav-right button:hover, button:hover {
+  background: var(--primary-dark);
+}
+
+#userEmail {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* Forms */
+input, textarea { 
+  width: 100%; 
+  padding: 10px; 
+  margin: 8px 0; 
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: inherit;
+}
+
+input:focus, textarea:focus {
+  outline: 2px solid var(--accent);
+  border-color: var(--accent);
+}
+
+textarea { height: 120px; resize: vertical; }
+
+#postForm { 
+  background: var(--card); 
+  padding: 20px; 
+  border-radius: var(--radius); 
+  margin-bottom: 30px;
+  box-shadow: var(--shadow);
+}
+
+#msg { margin-top: 10px; }
+
+/* Notifications */
+#notifBtn {
+  background: var(--accent);
+  color: var(--primary-dark);
+  position: relative;
+  padding: 0.5rem 0.75rem;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+#notifBtn:hover { 
+  background: var(--accent-dark); 
+}
+
+#notifCount {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 999px;
+  line-height: 1;
+  font-weight: 700;
+  min-width: 18px;
+  text-align: center;
+}
+
+#notifDropdown {
+  position: absolute;
+  right: 1rem;
+  top: 4rem;
+  width: 360px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 25px -3px rgb(0 0 0 / 0.15);
+  max-height: 500px;
+  overflow-y: auto;
+  z-index: 9999;
+}
+
+.notif-item {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  transition: background 0.15s;
+}
+
+.notif-item:last-child { border-bottom: none; }
+.notif-item:hover { background: var(--bg); }
+.notif-item.unread { 
+  background: #FFFBEA; 
+}
+.notif-item.unread:hover {
+  background: #fef3c7;
+}
+
+.notif-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+.notif-dot.read {
+  background: #d1d5db;
+}
+
+.notif-content {
+  flex: 1;
+}
+
+.notif-message {
+  color: var(--text);
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.notif-item small { 
+  color: var(--text-muted); 
+  display: block; 
+  margin-top: 4px;
+  font-size: 0.75rem;
+}
+
+/* Footer */
+#siteFooter {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-top: 4rem;
+  background: var(--card);
+  border-top: 3px solid var(--accent);
+}
+
+.hidden { display: none !important; }
+
+/* Hamburger Menu */
+.hamburger {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  font-size: 1.25rem;
+  line-height: 1;
+  border-radius: var(--radius);
+}
+
+.hamburger:hover {
+  background: var(--accent);
+  color: var(--primary-dark);
+  border-color: var(--accent);
+}
+
+.nav-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.3);
+  padding: 0.5rem 0;
+  min-width: 220px;
+  z-index: 9999;
+}
+
+.nav-menu a {
+  display: block;
+  padding: 0.75rem 1rem;
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.nav-menu a:hover {
+  background: var(--bg);
+  color: var(--accent);
+}
+
+/* Hero */
+.hero {
+  text-align: center;
+  padding: 4rem 1rem;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 2rem;
+  color: white;
+}
+
+.hero h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.hero p {
+  color: rgba(255,255,255,0.9);
+  font-size: 1.1rem;
+}
+
+.hero .btn {
+  display: inline-block;
+  margin-top: 1.5rem;
+  background: var(--accent);
+  color: var(--primary-dark);
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius);
+  text-decoration: none;
+  font-weight: 700;
+  transition: background 0.2s;
+}
+
+.hero .btn:hover {
+  background: var(--accent-dark);
+}
+
+.features {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .features { grid-template-columns: 1fr 1fr; }
+}
+
+/* Blog header */
+.blog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.blog-header h1 {
+    font-size: 2rem;
+    margin: 0;
+}
+
+.blog-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.blog-actions a {
+    padding: 0.5rem 1rem;
+    background: var(--primary);
+    color: white;
+    text-decoration: none;
+    border-radius: var(--radius);
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.blog-actions a:hover {
+    background: var(--primary-dark);
+}
+
+#createBtn {
+    background: var(--primary);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+#createBtn:hover {
+    background: var(--primary-dark);
+}
+
+/* Category Filter */
+.category-filter {
+    display: flex;
+    gap: 8px;
+    margin: 24px 0;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    background: white;
+    color: var(--text);
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    text-transform: capitalize;
+}
+
+.filter-btn:hover {
+    background: var(--bg);
+}
+
+.filter-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+/* Article Card - SINGLE CLEAN VERSION */
+.article {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin: 15px 0;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+
+.article-cover-wrapper {
+    display: block;
+    width: 100%;
+    height: 220px;
+    overflow: hidden;
+}
+
+.article-cover {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.article-content {
+    padding: 20px;
+}
+
+.category-badge {
+    display: inline-block;
+    background: #dbeafe;
+    color: #1e40af;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    margin-bottom: 12px;
+}
+
+.article h3 {
+    margin: 12px 0 8px 0;
+    font-size: 1.25rem;
+    line-height: 1.3;
+}
+
+.article h3 a {
+    color: var(--text);
+    text-decoration: none;
+}
+
+.article h3 a:hover {
+    color: var(--accent);
+}
+
+.meta {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    margin-bottom: 12px;
+}
+
+.meta a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.meta a:hover {
+    color: var(--accent);
+}
+
+.author-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: var(--text);
+}
+
+.author-link:hover {
+    color: var(--primary);
+}
+
+.author-avatar-small {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--border);
+}
+
+.author-avatar-placeholder {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--bg);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    border: 1px solid var(--border);
+}
+
+.article p {
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    margin-bottom: 16px;
+}
+
+/* Actions */
+.actions { 
+    display: flex; 
+    gap: 10px; 
+    align-items: center; 
+    border-top: 1px solid var(--border); 
+    padding-top: 15px; 
+    flex-wrap: wrap; 
+}
+
+.action-btn { 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 6px; 
+    background: #f5f5f5; 
+    border: 1px solid #e0e0e0; 
+    padding: 8px 14px; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    font-size: 0.9em; 
+    text-decoration: none; 
+    color: #333;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.action-btn:hover { 
+    background: #ebebeb; 
+}
+
+.action-btn.liked { 
+    background: #ffeef2; 
+    color: #e0245e; 
+    border-color: #ffc9d6; 
+}
+
+.action-btn.delete-btn {
+    color: #c00;
+    border-color: #ffdddd;
+}
+
+.action-btn.delete-btn:hover {
+    background: #ffebee;
+}
+
+.action-btn:active { 
+    transform: scale(0.95); 
+}
+
+/* Article Page */
+.article-hero {
+    width: 100%;
+    max-height: 400px;
+    margin-bottom: 32px;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.article-hero img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.article-full {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 16px;
+}
+
+.article-full .category-badge {
+    margin-top: 8px;
+    margin-bottom: 16px;
+}
+
+.article-full h1 {
+    font-size: 2.25rem;
+    line-height: 1.2;
+    margin: 16px 0 16px 0;
+    color: var(--text);
+}
+
+.article-excerpt {
+    font-size: 1.125rem;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    font-style: italic;
+    line-height: 1.6;
+}
+
+.article-full .meta {
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+}
+
+.article-content-full {
+    line-height: 1.8;
+    font-size: 1.0625rem;
+    color: var(--text);
+    margin-bottom: 40px;
+}
+
+.article-content-full p {
+    margin-bottom: 1.25rem;
+}
+
+.article-content-full h2 {
+    margin: 2rem 0 1rem 0;
+    font-size: 1.5rem;
+}
+
+.article-content-full h3 {
+    margin: 1.5rem 0 0.75rem 0;
+    font-size: 1.25rem;
+}
+
+/* Article Actions Bar - 2 ROW LAYOUT */
+.article-actions {
+    padding: 24px 0;
+    margin: 0 0 40px 0;
+    border-top: 2px solid var(--border);
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.actions-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.actions-row .action-btn {
+    padding: 10px 18px;
+    border: 1px solid var(--border);
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9375rem;
+    color: var(--text);
+    transition: all 0.2s;
+    font-family: inherit;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.actions-row .action-btn:hover {
+    background: var(--bg);
+    border-color: var(--primary);
+}
+
+.actions-row .action-btn.liked {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #dc2626;
+}
+
+.actions-row .action-btn.delete-btn {
+    color: #dc2626;
+    border-color: #fca5a5;
+}
+
+.actions-row .action-btn.delete-btn:hover {
+    background: #fef2f2;
+}
+
+.share-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.share-btn {
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    background: white;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    text-decoration: none;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+    flex: 1;
+    text-align: center;
+}
+
+.share-btn:hover {
+    background: var(--bg);
+    border-color: var(--primary);
+}
+
+/* Comments */
+#comments-section {
+    margin-top: 48px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+}
+
+#comments-section h3 {
+    margin: 0 0 24px 0;
+    font-size: 1.5rem;
+}
+
+.comment {
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    background: white;
+}
+
+.comment-meta {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.comment p {
+    margin: 0;
+    line-height: 1.6;
+}
+
+#commentForm {
+    margin-top: 32px;
+    padding: 24px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+#commentForm h4 {
+    margin-bottom: 16px;
+    font-size: 1.125rem;
+}
+
+#commentText {
+    min-height: 120px;
+    margin-bottom: 12px;
+}
+
+#postCommentBtn {
+    margin-top: 8px;
+}
+
+#commentMsg {
+    margin-top: 12px;
+    font-size: 0.875rem;
+    color: var(--accent-dark);
+    font-weight: 500;
+}
+
+/* Article Form Styles */
+#articleForm {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 1em;
+    transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+#submitBtn, #cancelBtn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 500;
+    margin-right: 10px;
+    transition: all 0.2s;
+}
+
+#submitBtn {
+    background: #3b82f6;
+    color: white;
+}
+
+#submitBtn:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
+
+#cancelBtn {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+#cancelBtn:hover {
+    background: #d1d5db;
+}
+
+#pageTitle {
+    margin-bottom: 24px;
+}
+
+/* Image preview */
+#imagePreview {
+    margin-top: 12px;
+    position: relative;
+    display: inline-block;
+}
+
+#previewImg {
+    max-width: 300px;
+    max-height: 200px;
+    border-radius: 8px;
+    border: 2px solid var(--border);
+}
+
+#removeImg {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(239, 68, 68, 0.9);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+input[type="file"] {
+    padding: 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    width: 100%;
+}
+
+/* Profile Page Styles */
+.profile-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2rem;
+    padding: 2rem;
+    background: var(--card);
+    border-radius: var(--radius);
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow);
+}
+
+.profile-info {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+}
+
+.profile-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid var(--accent);
+    flex-shrink: 0;
+}
+
+.profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+}
+
+.profile-details h2 {
+    margin: 0 0 0.5rem 0;
+    color: var(--primary);
+}
+
+.profile-meta {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+}
+
+.user-posts {
+    margin-top: 2rem;
+}
+
+#editProfileForm {
+    background: var(--card);
+    padding: 2rem;
+    border-radius: var(--radius);
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow);
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+#avatarPreview {
+    margin-top: 1rem;
+    position: relative;
+    display: inline-block;
+}
+
+#previewImg {
+    max-width: 150px;
+    max-height: 150px;
+    border-radius: 8px;
+    border: 2px solid var(--border);
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    #userEmail { display: none; }
+    main { margin: 1rem auto; }
+    #notifDropdown { width: calc(100vw - 2rem); right: 1rem; }
+    
+    .article-hero {
+        max-height: 250px;
+        border-radius: 0;
+        margin-left: -16px;
+        margin-right: -16px;
+        width: calc(100% + 32px);
     }
     
-    // Close hamburger when clicking outside
-    document.addEventListener('click', (e) => {
-        if (!navMenu.contains(e.target) && e.target !== hamburgerBtn) {
-            navMenu.classList.add('hidden')
-        }
-    })
-
-    if (currentUser) {
-        userEmail.textContent = currentUser.email
-        loginBtn.classList.add('hidden')
-        logoutBtn.classList.remove('hidden')
-        notifBtn.classList.remove('hidden')
-        loadNotifications()
-
-        notifChannel = supabase.channel(`notifications:${currentUser.id}`)
-         .on('postgres_changes', { 
-              event: 'INSERT', 
-              schema: 'public', 
-              table: 'notifications',
-              filter: `user_id=eq.${currentUser.id}`
-          }, () => loadNotifications())
-         .subscribe()
-
-        notifBtn.onclick = (e) => {
-            e.stopPropagation()
-            notifDropdown.classList.toggle('hidden')
-            navMenu.classList.add('hidden') // Close hamburger if notif opens
-        }
-
-        document.addEventListener('click', (e) => {
-            if (!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) {
-                notifDropdown.classList.add('hidden')
-            }
-        })
-
-    } else {
-        userEmail.textContent = ''
-        loginBtn.classList.remove('hidden')
-        logoutBtn.classList.add('hidden')
-        notifBtn.classList.add('hidden')
+    .article-full h1 {
+        font-size: 1.75rem;
+    }
+    
+    .article-content-full {
+        font-size: 1rem;
+    }
+    
+    .actions-row .action-btn {
+        flex: 1;
+        justify-content: center;
+    }
+    
+    .share-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .blog-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
     }
 
-    loginBtn.onclick = () => window.location.href = './login.html'
-    logoutBtn.onclick = async () => {
-        await supabase.auth.signOut()
-        location.reload()
+    .profile-header {
+        flex-direction: column;
     }
-
-    async function loadNotifications() {
-        if (!currentUser) return
-        const { data: notifs, error } = await supabase
-           .from('notifications')
-           .select('*')
-           .eq('user_id', currentUser.id)
-           .order('created_at', { ascending: false })
-           .limit(10)
-        
-        if (error) return console.error(error)
-        
-        const unread = notifs.filter(n => !n.is_read).length
-        if (unread > 0) {
-            notifCount.textContent = unread
-            notifCount.classList.remove('hidden')
-        } else {
-            notifCount.classList.add('hidden')
-        }
-        
-        notifDropdown.innerHTML = notifs.length ? notifs.map(n => `
-            <div class="notif-item ${n.is_read ? '' : 'unread'}" data-id="${n.id}" data-article="${n.article_id || ''}">
-                ${n.message}<br>
-                <small>${new Date(n.created_at).toLocaleString()}</small>
-            </div>
-        `).join('') : '<div class="notif-item">No notifications</div>'
-        
-        document.querySelectorAll('.notif-item[data-id]').forEach(item => {
-            item.onclick = async (e) => {
-                e.stopPropagation()
-                const id = item.dataset.id
-                const articleId = item.dataset.article
-                await supabase.from('notifications').update({ is_read: true }).eq('id', id)
-                notifDropdown.classList.add('hidden')
-                if (articleId) window.location.href = `./article.html?id=${articleId}`
-                else loadNotifications()
-            }
-        })
+    .profile-info {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
     }
-
-    return currentUser // Return user so pages can use it
 }
