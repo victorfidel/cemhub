@@ -292,4 +292,4 @@ async function deleteComment(commentId) {
 
     if (error) alert(error.message)
     else loadArticles()
-            }
+        }
