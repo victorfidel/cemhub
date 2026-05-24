@@ -98,19 +98,22 @@
                 </div>
 
                 <div class="article-actions">
-                    <button class="action-btn likeBtn ${isLiked? 'liked' : ''}" data-id="${article.id}">
-                        ${isLiked? '❤️' : '🤍'} ${likeCount}
-                    </button>
-                    <a class="action-btn" href="#comments-section">💬 ${commentCount}</a>
-                    ${user && user.id === article.author_id? `
-                        <a class="action-btn" href="post-article.html?edit=${article.id}">
-                            ✏️ Edit
-                        </a>
-                        <button class="action-btn delete-btn deleteBtn" data-id="${article.id}">
-                            🗑️ Delete
+                    <div class="actions-row">
+                        <button class="action-btn likeBtn ${isLiked? 'liked' : ''}" data-id="${article.id}">
+                            ${isLiked? '❤️' : '🤍'} ${likeCount}
                         </button>
-                    ` : ''}
-                    <div class="share-group">
+                        <a class="action-btn" href="#comments-section">💬 ${commentCount}</a>
+                        ${user && user.id === article.author_id? `
+                            <a class="action-btn" href="post-article.html?edit=${article.id}">
+                                ✏️ Edit
+                            </a>
+                            <button class="action-btn delete-btn deleteBtn" data-id="${article.id}">
+                                🗑️ Delete
+                            </button>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="share-row">
                         <a class="share-btn" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}">Facebook</a>
                         <a class="share-btn" target="_blank" href="https://twitter.com/intent/tweet?url=${encodeURIComponent(currentUrl)}&text=${encodeURIComponent(article.title)}">X</a>
                         <a class="share-btn" target="_blank" href="https://wa.me/?text=${encodeURIComponent(article.title + ' ' + currentUrl)}">WhatsApp</a>
@@ -211,4 +214,4 @@
     })
     </script>
 </body>
-    </html>
+</html>
