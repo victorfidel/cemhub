@@ -34,10 +34,10 @@ postBtn.onclick = async () => {
 
     // Get profile for author name
     const { data: profile } = await supabase
-    .from('profiles')
-    .select('username, full_name')
-    .eq('id', currentUser.id)
-    .single()
+   .from('profiles')
+   .select('username, full_name')
+   .eq('id', currentUser.id)
+   .single()
 
     const authorName = profile?.full_name || profile?.username || currentUser.email.split('@')[0]
 
@@ -69,18 +69,25 @@ function avatarHTML(url, size = 32) {
     return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:#ddd;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;vertical-align:middle;">👤</div>`
 }
 
+function truncateText(text, maxLength) {
+    if (!text) return ''
+    const stripped = text.replace(/<[^>]*>/g, '').replace(/\n/g, ' ') // remove HTML + newlines
+    if (stripped.length <= maxLength) return stripped
+    return stripped.substring(0, maxLength) + '...'
+}
+
 async function loadArticles() {
     articlesDiv.innerHTML = 'Loading...'
 
     const { data: articles, error } = await supabase
-    .from('articles')
-    .select(`
+   .from('articles')
+   .select(`
             id, title, content, created_at, user_id, author_name,
             profiles:user_id ( username, avatar_url ),
             likes(id, user_id, profiles ( username, avatar_url )),
             comments(id, content, created_at, user_id, profiles ( username, avatar_url ))
         `)
-    .order('created_at', { ascending: false })
+   .order('created_at', { ascending: false })
 
     if (error) {
         articlesDiv.innerHTML = `Error: ${error.message}`
@@ -100,6 +107,7 @@ async function loadArticles() {
         const username = article.profiles?.username || article.author_name || 'Anonymous'
         const avatar = avatarHTML(article.profiles?.avatar_url)
         const authorLink = `<a href="./profile.html?id=${article.user_id}">${avatar}${username}</a>`
+        const excerpt = truncateText(article.content, 150)
 
         return `
         <div class="article" data-id="${article.id}">
@@ -113,7 +121,10 @@ async function loadArticles() {
                 ` : ''}
             </div>
             <div class="article-content" data-id="${article.id}">
-                <p>${article.content.replace(/\n/g, '<br>')}</p>
+                <p class="article-excerpt">
+                    ${excerpt} 
+                    <a href="./article.html?id=${article.id}" class="read-more-link">Read more</a>
+                </p>
             </div>
             <div class="meta">By ${authorLink} • Posted ${new Date(article.created_at).toLocaleString()}</div>
 
@@ -196,11 +207,11 @@ async function toggleLike(articleId) {
     if (!currentUser) return
 
     const { data: existing } = await supabase
-    .from('likes')
-    .select('id')
-    .eq('article_id', articleId)
-    .eq('user_id', currentUser.id)
-    .single()
+   .from('likes')
+   .select('id')
+   .eq('article_id', articleId)
+   .eq('user_id', currentUser.id)
+   .single()
 
     if (existing) {
         await supabase.from('likes').delete().eq('id', existing.id)
@@ -212,10 +223,10 @@ async function toggleLike(articleId) {
 
 async function showLikes(articleId) {
     const { data: likes } = await supabase
-    .from('likes')
-    .select('user_id, profiles ( username, avatar_url )')
-    .eq('article_id', articleId)
-    .order('created_at', { ascending: false })
+   .from('likes')
+   .select('user_id, profiles ( username, avatar_url )')
+   .eq('article_id', articleId)
+   .order('created_at', { ascending: false })
 
     const modal = document.getElementById('likeModal')
     const list = document.getElementById('likeList')
@@ -276,41 +287,44 @@ async function postComment(articleId) {
 
 function editArticle(articleId) {
     const contentDiv = document.querySelector(`.article-content[data-id="${articleId}"]`)
-    const currentContent = contentDiv.querySelector('p').innerText
-    const currentTitle = contentDiv.parentElement.querySelector('h3 a').innerText
+    const currentContent = contentDiv.parentElement.querySelector('h3 a').innerText
+    const fullArticle = articlesDiv.querySelector(`.article[data-id="${articleId}"]`)
+    
+    // Get full content from DB for editing
+    supabase.from('articles').select('title, content').eq('id', articleId).single().then(({data}) => {
+        contentDiv.innerHTML = `
+            <input type="text" class="editTitle" value="${data.title}" style="width:100%;margin-bottom:10px;padding:8px;">
+            <textarea class="editContent" style="width:100%;height:100px;padding:8px;">${data.content}</textarea>
+            <div style="margin-top:10px;">
+                <button class="saveBtn" data-id="${articleId}">Save</button>
+                <button class="cancelBtn" data-id="${articleId}">Cancel</button>
+            </div>
+        `
 
-    contentDiv.innerHTML = `
-        <input type="text" class="editTitle" value="${currentTitle}" style="width:100%;margin-bottom:10px;padding:8px;">
-        <textarea class="editContent" style="width:100%;height:100px;padding:8px;">${currentContent}</textarea>
-        <div style="margin-top:10px;">
-            <button class="saveBtn" data-id="${articleId}">Save</button>
-            <button class="cancelBtn" data-id="${articleId}">Cancel</button>
-        </div>
-    `
+        contentDiv.querySelector('.saveBtn').onclick = async () => {
+            const newTitle = contentDiv.querySelector('.editTitle').value
+            const newContent = contentDiv.querySelector('.editContent').value
 
-    contentDiv.querySelector('.saveBtn').onclick = async () => {
-        const newTitle = contentDiv.querySelector('.editTitle').value
-        const newContent = contentDiv.querySelector('.editContent').value
+            const { error } = await supabase
+           .from('articles')
+           .update({ title: newTitle, content: newContent })
+           .eq('id', articleId)
 
-        const { error } = await supabase
-        .from('articles')
-        .update({ title: newTitle, content: newContent })
-        .eq('id', articleId)
+            if (error) alert(error.message)
+            else loadArticles()
+        }
 
-        if (error) alert(error.message)
-        else loadArticles()
-    }
-
-    contentDiv.querySelector('.cancelBtn').onclick = () => loadArticles()
+        contentDiv.querySelector('.cancelBtn').onclick = () => loadArticles()
+    })
 }
 
 async function deleteArticle(articleId) {
     if (!confirm('Delete this article? This cannot be undone.')) return
 
     const { error } = await supabase
-    .from('articles')
-    .delete()
-    .eq('id', articleId)
+   .from('articles')
+   .delete()
+   .eq('id', articleId)
 
     if (error) alert(error.message)
     else loadArticles()
@@ -332,9 +346,9 @@ function editComment(commentId) {
         const newContent = contentDiv.querySelector('.editCommentInput').value
 
         const { error } = await supabase
-        .from('comments')
-        .update({ content: newContent })
-        .eq('id', commentId)
+       .from('comments')
+       .update({ content: newContent })
+       .eq('id', commentId)
 
         if (error) alert(error.message)
         else loadArticles()
@@ -347,10 +361,10 @@ async function deleteComment(commentId) {
     if (!confirm('Delete this comment?')) return
 
     const { error } = await supabase
-    .from('comments')
-    .delete()
-    .eq('id', commentId)
+   .from('comments')
+   .delete()
+   .eq('id', commentId)
 
     if (error) alert(error.message)
     else loadArticles()
-    }
+}
