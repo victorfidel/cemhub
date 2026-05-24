@@ -34,10 +34,10 @@ postBtn.onclick = async () => {
 
     // Get profile for author name
     const { data: profile } = await supabase
-   .from('profiles')
-   .select('username, full_name')
-   .eq('id', currentUser.id)
-   .single()
+ .from('profiles')
+ .select('username, full_name')
+ .eq('id', currentUser.id)
+ .single()
 
     const authorName = profile?.full_name || profile?.username || currentUser.email.split('@')[0]
 
@@ -71,7 +71,7 @@ function avatarHTML(url, size = 32) {
 
 function truncateText(text, maxLength) {
     if (!text) return ''
-    const stripped = text.replace(/<[^>]*>/g, '').replace(/\n/g, ' ') // remove HTML + newlines
+    const stripped = text.replace(/<[^>]*>/g, '').replace(/\n/g, ' ').trim()
     if (stripped.length <= maxLength) return stripped
     return stripped.substring(0, maxLength) + '...'
 }
@@ -80,14 +80,14 @@ async function loadArticles() {
     articlesDiv.innerHTML = 'Loading...'
 
     const { data: articles, error } = await supabase
-   .from('articles')
-   .select(`
-            id, title, content, created_at, user_id, author_name,
+ .from('articles')
+ .select(`
+            id, title, content, created_at, user_id, author_name, cover_image, category,
             profiles:user_id ( username, avatar_url ),
             likes(id, user_id, profiles ( username, avatar_url )),
             comments(id, content, created_at, user_id, profiles ( username, avatar_url ))
         `)
-   .order('created_at', { ascending: false })
+ .order('created_at', { ascending: false })
 
     if (error) {
         articlesDiv.innerHTML = `Error: ${error.message}`
@@ -99,6 +99,8 @@ async function loadArticles() {
         return
     }
 
+    const EXCERPT_LENGTH = 100
+
     articlesDiv.innerHTML = articles.map(article => {
         const likeCount = article.likes.length
         const userLiked = currentUser? article.likes.some(l => l.user_id === currentUser.id) : false
@@ -107,99 +109,63 @@ async function loadArticles() {
         const username = article.profiles?.username || article.author_name || 'Anonymous'
         const avatar = avatarHTML(article.profiles?.avatar_url)
         const authorLink = `<a href="./profile.html?id=${article.user_id}">${avatar}${username}</a>`
-        const excerpt = truncateText(article.content, 150)
+        const rawContent = article.content?.trim() || ''
+        const excerpt = truncateText(rawContent, EXCERPT_LENGTH)
+        const isTruncated = rawContent.length > EXCERPT_LENGTH
 
         return `
         <div class="article" data-id="${article.id}">
-            <div class="article-header">
+            ${article.cover_image? `
+            <a href="./article.html?id=${article.id}" class="article-cover-wrapper">
+                <img src="${article.cover_image}" class="article-cover" alt="${article.title}">
+            </a>
+            ` : ''}
+            <div class="article-content">
+                ${article.category? `<span class="category-badge">${article.category}</span>` : `<span class="category-badge">Featured</span>`}
                 <h3><a href="./article.html?id=${article.id}">${article.title}</a></h3>
-                ${isOwner? `
-                <div class="owner-actions">
-                    <button class="editBtn" data-id="${article.id}">Edit</button>
-                    <button class="deleteBtn" data-id="${article.id}">Delete</button>
-                </div>
-                ` : ''}
-            </div>
-            <div class="article-content" data-id="${article.id}">
+                <div class="meta">By ${authorLink} • Posted ${new Date(article.created_at).toLocaleDateString()}</div>
+                ${rawContent? `
                 <p class="article-excerpt">
-                    ${excerpt} 
-                    <a href="./article.html?id=${article.id}" class="read-more-link">Read more</a>
+                    ${excerpt}
+                    ${isTruncated? `<a href="./article.html?id=${article.id}" class="read-more-link">Read more</a>` : ''}
                 </p>
-            </div>
-            <div class="meta">By ${authorLink} • Posted ${new Date(article.created_at).toLocaleString()}</div>
-
-            <div class="actions">
-                <button class="likeBtn" data-id="${article.id}" ${!currentUser? 'disabled' : ''}>
-                    ${userLiked? '❤️' : '🤍'}
-                </button>
-                <button class="likeCountBtn" data-id="${article.id}" ${likeCount === 0? 'disabled' : ''}>
-                    ${likeCount} ${likeCount === 1? 'like' : 'likes'}
-                </button>
-                <a href="./article.html?id=${article.id}" class="viewBtn">View</a>
-            </div>
-
-            <div class="comments">
-                <h4>Comments (${comments.length})</h4>
-                <div class="comment-list">
-                    ${comments.map(c => {
-                        const isCommentOwner = currentUser && currentUser.id === c.user_id
-                        const commentUsername = c.profiles?.username || 'Anonymous'
-                        const commentAvatar = avatarHTML(c.profiles?.avatar_url, 24)
-                        const commentUserLink = `<a href="./profile.html?id=${c.user_id}">${commentAvatar}${commentUsername}</a>`
-                        return `
-                        <div class="comment" data-id="${c.id}">
-                            <div class="comment-content" data-id="${c.id}">
-                                <p>${c.content}</p>
-                            </div>
-                            <div class="comment-footer">
-                                <span class="meta">${commentUserLink} • ${new Date(c.created_at).toLocaleTimeString()}</span>
-                                ${isCommentOwner? `
-                                <div class="owner-actions">
-                                    <button class="editCommentBtn" data-id="${c.id}">Edit</button>
-                                    <button class="deleteCommentBtn" data-id="${c.id}">Delete</button>
-                                </div>
-                                ` : ''}
-                            </div>
-                        </div>
-                        `
-                    }).join('')}
+                ` : ''}
+                <div class="actions">
+                    <button class="likeBtn action-btn ${userLiked? 'liked' : ''}" data-id="${article.id}" ${!currentUser? 'disabled' : ''}>
+                        ${userLiked? '❤️' : '🤍'} ${likeCount}
+                    </button>
+                    <a href="./article.html?id=${article.id}" class="action-btn">
+                        💬 ${comments.length}
+                    </a>
+                    ${isOwner? `
+                    <button class="editBtn action-btn" data-id="${article.id}">Edit</button>
+                    <button class="deleteBtn action-btn delete-btn" data-id="${article.id}">Delete</button>
+                    ` : ''}
                 </div>
-                ${currentUser? `
-                <div class="comment-form">
-                    <input type="text" class="commentInput" placeholder="Add a comment..." data-id="${article.id}">
-                    <button class="commentBtn" data-id="${article.id}">Post</button>
-                </div>
-                ` : '<p>Login to comment</p>'}
             </div>
+        </div>
         `
     }).join('')
 
     document.querySelectorAll('.likeBtn').forEach(btn => {
-        btn.onclick = () => toggleLike(btn.dataset.id)
-    })
-
-    document.querySelectorAll('.likeCountBtn').forEach(btn => {
-        btn.onclick = () => showLikes(btn.dataset.id)
-    })
-
-    document.querySelectorAll('.commentBtn').forEach(btn => {
-        btn.onclick = () => postComment(btn.dataset.id)
+        btn.onclick = (e) => {
+            e.stopPropagation()
+            toggleLike(btn.dataset.id)
+        }
     })
 
     document.querySelectorAll('.editBtn').forEach(btn => {
-        btn.onclick = () => editArticle(btn.dataset.id)
+        btn.onclick = (e) => {
+            e.stopPropagation()
+            editArticle(btn.dataset.id)
+        }
     })
 
     document.querySelectorAll('.deleteBtn').forEach(btn => {
-        btn.onclick = () => deleteArticle(btn.dataset.id)
-    })
-
-    document.querySelectorAll('.editCommentBtn').forEach(btn => {
-        btn.onclick = () => editComment(btn.dataset.id)
-    })
-
-    document.querySelectorAll('.deleteCommentBtn').forEach(btn => {
-        btn.onclick = () => deleteComment(btn.dataset.id)
+        btn.onclick = (e) => {
+            e.stopPropagation()
+            deleteArticle(btn.dataset.id)
+        }
     })
 }
 
@@ -207,11 +173,11 @@ async function toggleLike(articleId) {
     if (!currentUser) return
 
     const { data: existing } = await supabase
-   .from('likes')
-   .select('id')
-   .eq('article_id', articleId)
-   .eq('user_id', currentUser.id)
-   .single()
+ .from('likes')
+ .select('id')
+ .eq('article_id', articleId)
+ .eq('user_id', currentUser.id)
+ .single()
 
     if (existing) {
         await supabase.from('likes').delete().eq('id', existing.id)
@@ -223,10 +189,10 @@ async function toggleLike(articleId) {
 
 async function showLikes(articleId) {
     const { data: likes } = await supabase
-   .from('likes')
-   .select('user_id, profiles ( username, avatar_url )')
-   .eq('article_id', articleId)
-   .order('created_at', { ascending: false })
+ .from('likes')
+ .select('user_id, profiles ( username, avatar_url )')
+ .eq('article_id', articleId)
+ .order('created_at', { ascending: false })
 
     const modal = document.getElementById('likeModal')
     const list = document.getElementById('likeList')
@@ -286,45 +252,16 @@ async function postComment(articleId) {
 }
 
 function editArticle(articleId) {
-    const contentDiv = document.querySelector(`.article-content[data-id="${articleId}"]`)
-    const currentContent = contentDiv.parentElement.querySelector('h3 a').innerText
-    const fullArticle = articlesDiv.querySelector(`.article[data-id="${articleId}"]`)
-    
-    // Get full content from DB for editing
-    supabase.from('articles').select('title, content').eq('id', articleId).single().then(({data}) => {
-        contentDiv.innerHTML = `
-            <input type="text" class="editTitle" value="${data.title}" style="width:100%;margin-bottom:10px;padding:8px;">
-            <textarea class="editContent" style="width:100%;height:100px;padding:8px;">${data.content}</textarea>
-            <div style="margin-top:10px;">
-                <button class="saveBtn" data-id="${articleId}">Save</button>
-                <button class="cancelBtn" data-id="${articleId}">Cancel</button>
-            </div>
-        `
-
-        contentDiv.querySelector('.saveBtn').onclick = async () => {
-            const newTitle = contentDiv.querySelector('.editTitle').value
-            const newContent = contentDiv.querySelector('.editContent').value
-
-            const { error } = await supabase
-           .from('articles')
-           .update({ title: newTitle, content: newContent })
-           .eq('id', articleId)
-
-            if (error) alert(error.message)
-            else loadArticles()
-        }
-
-        contentDiv.querySelector('.cancelBtn').onclick = () => loadArticles()
-    })
+    window.location.href = `./editor.html?id=${articleId}`
 }
 
 async function deleteArticle(articleId) {
     if (!confirm('Delete this article? This cannot be undone.')) return
 
     const { error } = await supabase
-   .from('articles')
-   .delete()
-   .eq('id', articleId)
+ .from('articles')
+ .delete()
+ .eq('id', articleId)
 
     if (error) alert(error.message)
     else loadArticles()
@@ -346,9 +283,9 @@ function editComment(commentId) {
         const newContent = contentDiv.querySelector('.editCommentInput').value
 
         const { error } = await supabase
-       .from('comments')
-       .update({ content: newContent })
-       .eq('id', commentId)
+   .from('comments')
+   .update({ content: newContent })
+   .eq('id', commentId)
 
         if (error) alert(error.message)
         else loadArticles()
@@ -361,10 +298,10 @@ async function deleteComment(commentId) {
     if (!confirm('Delete this comment?')) return
 
     const { error } = await supabase
-   .from('comments')
-   .delete()
-   .eq('id', commentId)
+.from('comments')
+.delete()
+.eq('id', commentId)
 
     if (error) alert(error.message)
     else loadArticles()
-        }
+    }
