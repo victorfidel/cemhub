@@ -34,10 +34,10 @@ postBtn.onclick = async () => {
 
     // Get profile for author name
     const { data: profile } = await supabase
- .from('profiles')
- .select('username, full_name')
- .eq('id', currentUser.id)
- .single()
+.from('profiles')
+.select('username, full_name')
+.eq('id', currentUser.id)
+.single()
 
     const authorName = profile?.full_name || profile?.username || currentUser.email.split('@')[0]
 
@@ -73,21 +73,21 @@ function truncateText(text, maxLength) {
     if (!text) return ''
     const stripped = text.replace(/<[^>]*>/g, '').replace(/\n/g, ' ').trim()
     if (stripped.length <= maxLength) return stripped
-    return stripped.substring(0, maxLength) + '...'
+    return stripped.substring(0, maxLength)
 }
 
 async function loadArticles() {
     articlesDiv.innerHTML = 'Loading...'
 
     const { data: articles, error } = await supabase
- .from('articles')
- .select(`
+.from('articles')
+.select(`
             id, title, content, created_at, user_id, author_name, cover_image, category,
             profiles:user_id ( username, avatar_url ),
             likes(id, user_id, profiles ( username, avatar_url )),
             comments(id, content, created_at, user_id, profiles ( username, avatar_url ))
         `)
- .order('created_at', { ascending: false })
+.order('created_at', { ascending: false })
 
     if (error) {
         articlesDiv.innerHTML = `Error: ${error.message}`
@@ -110,8 +110,8 @@ async function loadArticles() {
         const avatar = avatarHTML(article.profiles?.avatar_url)
         const authorLink = `<a href="./profile.html?id=${article.user_id}">${avatar}${username}</a>`
         const rawContent = article.content?.trim() || ''
-        const excerpt = truncateText(rawContent, EXCERPT_LENGTH)
         const isTruncated = rawContent.length > EXCERPT_LENGTH
+        const excerpt = truncateText(rawContent, EXCERPT_LENGTH)
 
         return `
         <div class="article" data-id="${article.id}">
@@ -126,8 +126,7 @@ async function loadArticles() {
                 <div class="meta">By ${authorLink} • Posted ${new Date(article.created_at).toLocaleDateString()}</div>
                 ${rawContent? `
                 <p class="article-excerpt">
-                    ${excerpt}
-                    ${isTruncated? `<a href="./article.html?id=${article.id}" class="read-more-link">Read more</a>` : ''}
+                    ${excerpt}${isTruncated? `... <a href="./article.html?id=${article.id}" class="read-more-link">Read more</a>` : ''}
                 </p>
                 ` : ''}
                 <div class="actions">
@@ -173,11 +172,11 @@ async function toggleLike(articleId) {
     if (!currentUser) return
 
     const { data: existing } = await supabase
- .from('likes')
- .select('id')
- .eq('article_id', articleId)
- .eq('user_id', currentUser.id)
- .single()
+.from('likes')
+.select('id')
+.eq('article_id', articleId)
+.eq('user_id', currentUser.id)
+.single()
 
     if (existing) {
         await supabase.from('likes').delete().eq('id', existing.id)
@@ -189,10 +188,10 @@ async function toggleLike(articleId) {
 
 async function showLikes(articleId) {
     const { data: likes } = await supabase
- .from('likes')
- .select('user_id, profiles ( username, avatar_url )')
- .eq('article_id', articleId)
- .order('created_at', { ascending: false })
+.from('likes')
+.select('user_id, profiles ( username, avatar_url )')
+.eq('article_id', articleId)
+.order('created_at', { ascending: false })
 
     const modal = document.getElementById('likeModal')
     const list = document.getElementById('likeList')
@@ -259,9 +258,9 @@ async function deleteArticle(articleId) {
     if (!confirm('Delete this article? This cannot be undone.')) return
 
     const { error } = await supabase
- .from('articles')
- .delete()
- .eq('id', articleId)
+.from('articles')
+.delete()
+.eq('id', articleId)
 
     if (error) alert(error.message)
     else loadArticles()
@@ -283,9 +282,9 @@ function editComment(commentId) {
         const newContent = contentDiv.querySelector('.editCommentInput').value
 
         const { error } = await supabase
-   .from('comments')
-   .update({ content: newContent })
-   .eq('id', commentId)
+  .from('comments')
+  .update({ content: newContent })
+  .eq('id', commentId)
 
         if (error) alert(error.message)
         else loadArticles()
@@ -304,4 +303,4 @@ async function deleteComment(commentId) {
 
     if (error) alert(error.message)
     else loadArticles()
-    }
+}
