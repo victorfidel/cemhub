@@ -306,7 +306,7 @@ textarea { height: 120px; resize: vertical; }
   transform: rotate(-135deg);
 }
 
-/* Slide Menu From Left - BRANDED + COMPACT HEIGHT */
+/* Slide Menu From Left - BRANDED + COMPACT HEIGHT + DIVIDERS */
 .nav-menu {
   position: fixed;
   top: 60px;
@@ -317,7 +317,7 @@ textarea { height: 120px; resize: vertical; }
   background: var(--primary);
   border-right: 3px solid var(--accent);
   box-shadow: 2px 0 15px rgba(0,0,0,0.2);
-  padding: 1rem 0 1.5rem 0;
+  padding: 0.5rem 0 1.5rem 0;
   z-index: 998;
   transition: left 0.3s ease;
   overflow-y: auto;
@@ -336,6 +336,11 @@ textarea { height: 120px; resize: vertical; }
   font-weight: 500;
   transition: all 0.2s;
   border-left: 3px solid transparent;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.nav-menu a:last-child {
+  border-bottom: none;
 }
 
 .nav-menu a:hover {
