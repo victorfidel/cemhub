@@ -91,19 +91,19 @@
     async function loadProfile() {
         // Try to get from profiles table first
         let { data: profile, error } = await supabase
-           .from('profiles')
-           .select('*')
-           .eq('id', profileUserId)
-           .single()
+         .from('profiles')
+         .select('*')
+         .eq('id', profileUserId)
+         .single()
 
         // Fallback: get info from articles if no profile table yet
         if (error ||!profile) {
             const { data: articles } = await supabase
-               .from('articles')
-               .select('author_name, author_email')
-               .eq('author_id', profileUserId)
-               .limit(1)
-               .single()
+             .from('articles')
+             .select('author_name, author_email')
+             .eq('author_id', profileUserId)
+             .limit(1)
+             .single()
             
             profile = {
                 id: profileUserId,
@@ -133,9 +133,9 @@
 
         // Meta: join date, post count
         const { data: postCount } = await supabase
-           .from('articles')
-           .select('id', { count: 'exact' })
-           .eq('author_id', profileUserId)
+         .from('articles')
+         .select('id', { count: 'exact' })
+         .eq('author_id', profileUserId)
         
         const joinDate = profile.created_at? new Date(profile.created_at).toLocaleDateString() : 'Unknown'
         profileMeta.innerHTML = `${postCount?.length || 0} posts • Joined ${joinDate}`
@@ -143,10 +143,10 @@
 
     async function loadUserPosts() {
         const { data: articles, error } = await supabase
-           .from('articles')
-           .select('*')
-           .eq('author_id', profileUserId)
-           .order('created_at', { ascending: false })
+         .from('articles')
+         .select('*')
+         .eq('author_id', profileUserId)
+         .order('created_at', { ascending: false })
 
         if (error) {
             userArticles.innerHTML = '<p>Error loading posts</p>'
@@ -229,8 +229,8 @@
             const fileName = `${user.id}-${Date.now()}.${fileExt}`
             
             const { error: uploadError } = await supabase.storage
-               .from('avatars')
-               .upload(fileName, avatarFile)
+             .from('avatars')
+             .upload(fileName, avatarFile, { upsert: true })
 
             if (uploadError) {
                 msg.textContent = `Upload error: ${uploadError.message}`
@@ -241,15 +241,14 @@
             avatar_url = data.publicUrl
         }
 
-        // Upsert profile
+        // Upsert profile - removed email to avoid schema cache error
         const { error } = await supabase
-           .from('profiles')
-           .upsert({
+         .from('profiles')
+         .upsert({
                 id: user.id,
                 username,
                 bio,
-                avatar_url,
-                email: user.email
+                avatar_url
             })
 
         if (error) {
@@ -265,4 +264,4 @@
     })
     </script>
 </body>
-                </html>
+    </html>
