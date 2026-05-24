@@ -532,6 +532,28 @@ textarea { height: 120px; resize: vertical; }
     margin-bottom: 16px;
 }
 
+/* NEW: Article Excerpt + Read More Link */
+.article-excerpt {
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    margin-bottom: 16px;
+}
+
+.read-more-link {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+    margin-left: 4px;
+    display: inline-block;
+    transition: color 0.2s;
+}
+
+.read-more-link:hover {
+    color: var(--accent);
+    text-decoration: underline;
+}
+
 /* Actions */
 .actions { 
     display: flex; 
