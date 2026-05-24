@@ -97,7 +97,7 @@
             return
         }
 
-        const EXCERPT_LENGTH = 100
+        const EXCERPT_LENGTH = 200
 
         articlesDiv.innerHTML = articles.map(article => {
             const cleanContent = article.content?.replace(/<[^>]*>/g, '').replace(/\n/g, ' ').trim() || ''
