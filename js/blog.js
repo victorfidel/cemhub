@@ -69,11 +69,16 @@ function avatarHTML(url, size = 32) {
     return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:#ddd;display:inline-flex;align-items:center;justify-content:center;margin-right:8px;vertical-align:middle;">👤</div>`
 }
 
-function truncateText(text, maxLength) {
-    if (!text) return ''
+function getExcerpt(text, maxLength) {
+    if (!text) return { text: '', needsReadMore: false }
     const stripped = text.replace(/<[^>]*>/g, '').replace(/\n/g, ' ').trim()
-    if (stripped.length <= maxLength) return stripped
-    return stripped.substring(0, maxLength)
+    if (stripped.length <= maxLength) {
+        return { text: stripped, needsReadMore: false }
+    }
+    return { 
+        text: stripped.substring(0, maxLength), 
+        needsReadMore: true 
+    }
 }
 
 async function loadArticles() {
@@ -109,9 +114,8 @@ async function loadArticles() {
         const username = article.profiles?.username || article.author_name || 'Anonymous'
         const avatar = avatarHTML(article.profiles?.avatar_url)
         const authorLink = `<a href="./profile.html?id=${article.user_id}">${avatar}${username}</a>`
-        const rawContent = article.content?.trim() || ''
-        const isTruncated = rawContent.length > EXCERPT_LENGTH
-        const excerpt = truncateText(rawContent, EXCERPT_LENGTH)
+        
+        const { text: excerpt, needsReadMore } = getExcerpt(article.content, EXCERPT_LENGTH)
 
         return `
         <div class="article" data-id="${article.id}">
@@ -124,10 +128,8 @@ async function loadArticles() {
                 ${article.category? `<span class="category-badge">${article.category}</span>` : `<span class="category-badge">Featured</span>`}
                 <h3><a href="./article.html?id=${article.id}">${article.title}</a></h3>
                 <div class="meta">By ${authorLink} • Posted ${new Date(article.created_at).toLocaleDateString()}</div>
-                ${rawContent? `
-                <p class="article-excerpt">
-                    ${excerpt}${isTruncated? `... <a href="./article.html?id=${article.id}" class="read-more-link">Read more</a>` : ''}
-                </p>
+                ${excerpt? `
+                <p class="article-excerpt">${excerpt}${needsReadMore? `... <a href="./article.html?id=${article.id}" class="read-more-link">Read more</a>` : ''}</p>
                 ` : ''}
                 <div class="actions">
                     <button class="likeBtn action-btn ${userLiked? 'liked' : ''}" data-id="${article.id}" ${!currentUser? 'disabled' : ''}>
@@ -282,9 +284,9 @@ function editComment(commentId) {
         const newContent = contentDiv.querySelector('.editCommentInput').value
 
         const { error } = await supabase
-  .from('comments')
-  .update({ content: newContent })
-  .eq('id', commentId)
+ .from('comments')
+ .update({ content: newContent })
+ .eq('id', commentId)
 
         if (error) alert(error.message)
         else loadArticles()
@@ -303,4 +305,4 @@ async function deleteComment(commentId) {
 
     if (error) alert(error.message)
     else loadArticles()
-}
+            }
