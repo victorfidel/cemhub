@@ -8,9 +8,13 @@ export async function initLayout() {
             <header id="siteHeader">
                 <nav>
                     <div class="nav-left">
-                        <button id="hamburgerBtn" class="hamburger">☰</button>
+                        <button id="hamburgerBtn" class="hamburger">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </button>
                         <a href="./index.html" class="logo">CEM Hub</a>
-                        <div id="navMenu" class="nav-menu hidden">
+                        <div id="navMenu" class="nav-menu">
                             <a href="./index.html">Homepage</a>
                             <a href="./blog.html">Blog</a>
                             <a href="./founder.html">Founder</a>
@@ -28,6 +32,7 @@ export async function initLayout() {
                     </div>
                 </nav>
             </header>
+            <div id="menuOverlay" class="menu-overlay"></div>
         `)
     }
 
@@ -48,6 +53,7 @@ export async function initLayout() {
     const notifDropdown = document.getElementById('notifDropdown')
     const hamburgerBtn = document.getElementById('hamburgerBtn')
     const navMenu = document.getElementById('navMenu')
+    const menuOverlay = document.getElementById('menuOverlay')
 
     let notifChannel = null
     const { data: { session } } = await supabase.auth.getSession()
@@ -55,19 +61,43 @@ export async function initLayout() {
 
     if (notifChannel) supabase.removeChannel(notifChannel)
 
+    function toggleMenu() {
+        hamburgerBtn.classList.toggle('active')
+        navMenu.classList.toggle('active')
+        menuOverlay.classList.toggle('active')
+        document.body.style.overflow = navMenu.classList.contains('active') ? 'hidden' : ''
+    }
+
+    function closeMenu() {
+        hamburgerBtn.classList.remove('active')
+        navMenu.classList.remove('active')
+        menuOverlay.classList.remove('active')
+        document.body.style.overflow = ''
+    }
+
     hamburgerBtn.onclick = (e) => {
         e.stopPropagation()
-        navMenu.classList.toggle('hidden')
+        toggleMenu()
         notifDropdown.classList.add('hidden')
     }
     
+    menuOverlay.onclick = closeMenu
+    
     document.addEventListener('click', (e) => {
-        if (!navMenu.contains(e.target) && e.target !== hamburgerBtn) {
-            navMenu.classList.add('hidden')
+        if (navMenu.classList.contains('active') && 
+            !navMenu.contains(e.target) && 
+            e.target !== hamburgerBtn && 
+            !hamburgerBtn.contains(e.target)) {
+            closeMenu()
         }
         if (!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) {
             notifDropdown.classList.add('hidden')
         }
+    })
+
+    // Close menu when clicking a nav link
+    navMenu.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', closeMenu)
     })
 
     if (currentUser) {
@@ -91,7 +121,7 @@ export async function initLayout() {
             e.stopPropagation()
             e.preventDefault()
             notifDropdown.classList.toggle('hidden')
-            navMenu.classList.add('hidden')
+            closeMenu()
         }
 
     } else {
