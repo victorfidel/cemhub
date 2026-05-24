@@ -256,48 +256,109 @@ textarea { height: 120px; resize: vertical; }
 
 .hidden { display: none !important; }
 
-/* Hamburger Menu */
+/* Hamburger Menu - UPDATED WITH X ANIMATION */
 .hamburger {
-  background: transparent;
-  color: var(--text);
+  width: 28px;
+  height: 22px;
+  position: relative;
+  cursor: pointer;
   border: 1px solid var(--border);
-  padding: 0.5rem 0.75rem;
-  font-size: 1.25rem;
-  line-height: 1;
+  background: transparent;
+  padding: 0.5rem;
   border-radius: var(--radius);
+  transition: all 0.3s;
 }
 
 .hamburger:hover {
-  background: var(--accent);
-  color: var(--primary-dark);
+  background: var(--bg);
   border-color: var(--accent);
 }
 
-.nav-menu {
+.hamburger span {
+  display: block;
   position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
+  height: 2px;
+  width: 18px;
+  background: var(--text);
+  border-radius: 2px;
+  opacity: 1;
+  left: 4px;
+  transform: rotate(0deg);
+  transition: .25s ease-in-out;
+}
+
+.hamburger span:nth-child(1) { top: 5px; }
+.hamburger span:nth-child(2) { top: 10px; }
+.hamburger span:nth-child(3) { top: 15px; }
+
+.hamburger.active span:nth-child(1) {
+  top: 10px;
+  transform: rotate(135deg);
+}
+
+.hamburger.active span:nth-child(2) {
+  opacity: 0;
+  left: -20px;
+}
+
+.hamburger.active span:nth-child(3) {
+  top: 10px;
+  transform: rotate(-135deg);
+}
+
+/* Slide Menu From Left - UPDATED */
+.nav-menu {
+  position: fixed;
+  top: 0;
+  left: -280px;
+  width: 280px;
+  height: 100vh;
   background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.3);
-  padding: 0.5rem 0;
-  min-width: 220px;
-  z-index: 9999;
+  border-right: 1px solid var(--border);
+  box-shadow: 2px 0 15px rgba(0,0,0,0.1);
+  padding: 5rem 0 1rem 0;
+  z-index: 1000;
+  transition: left 0.3s ease;
+  overflow-y: auto;
+}
+
+.nav-menu.active {
+  left: 0;
 }
 
 .nav-menu a {
   display: block;
-  padding: 0.75rem 1rem;
+  padding: 1rem 1.5rem;
   text-decoration: none;
   color: var(--text);
   font-weight: 500;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  border-left: 3px solid transparent;
 }
 
 .nav-menu a:hover {
   background: var(--bg);
-  color: var(--accent);
+  color: var(--primary);
+  border-left-color: var(--accent);
+}
+
+/* Menu Overlay - NEW */
+.menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 999;
+}
+
+.menu-overlay.active {
+  opacity: 1;
+  visibility: visible;
 }
 
 /* Hero */
@@ -1053,5 +1114,14 @@ input[type="file"] {
         flex-direction: column;
         align-items: center;
         text-align: center;
+    }
+    
+    .nav-menu {
+        width: 85vw;
+        left: -85vw;
+    }
+    
+    .nav-menu.active {
+        left: 0;
     }
   }
