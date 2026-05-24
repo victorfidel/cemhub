@@ -27,6 +27,7 @@ export async function initLayout() {
                         <button id="logoutBtn" class="hidden">Logout</button>
                     </div>
                 </nav>
+                <div id="debugInfo" style="background:#ff0;padding:6px;font-size:11px;text-align:center;word-break:break-all;"></div>
             </header>
         `)
     }
@@ -40,7 +41,6 @@ export async function initLayout() {
         `)
     }
 
-    // Now run all the auth + notification logic
     const userEmail = document.getElementById('userEmail')
     const loginBtn = document.getElementById('loginBtn')
     const logoutBtn = document.getElementById('logoutBtn')
@@ -49,6 +49,7 @@ export async function initLayout() {
     const notifDropdown = document.getElementById('notifDropdown')
     const hamburgerBtn = document.getElementById('hamburgerBtn')
     const navMenu = document.getElementById('navMenu')
+    const debugInfo = document.getElementById('debugInfo')
 
     let notifChannel = null
     const { data: { session } } = await supabase.auth.getSession()
@@ -56,19 +57,16 @@ export async function initLayout() {
 
     if (notifChannel) supabase.removeChannel(notifChannel)
 
-    // Hamburger toggle logic
     hamburgerBtn.onclick = (e) => {
         e.stopPropagation()
         navMenu.classList.toggle('hidden')
         notifDropdown.classList.add('hidden')
     }
     
-    // Close menus when clicking outside
     document.addEventListener('click', (e) => {
         if (!navMenu.contains(e.target) && e.target !== hamburgerBtn) {
             navMenu.classList.add('hidden')
         }
-        // Fixed: check if click is inside notifBtn or its children
         if (!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) {
             notifDropdown.classList.add('hidden')
         }
@@ -80,7 +78,7 @@ export async function initLayout() {
         logoutBtn.classList.remove('hidden')
         notifBtn.classList.remove('hidden')
         
-        console.log('Current user ID:', currentUser.id) // Debug
+        debugInfo.textContent = `Logged in: ${currentUser.email} | ID: ${currentUser.id}`
         await loadNotifications()
 
         notifChannel = supabase.channel(`notifications:${currentUser.id}`)
@@ -89,8 +87,8 @@ export async function initLayout() {
               schema: 'public', 
               table: 'notifications',
               filter: `user_id=eq.${currentUser.id}`
-          }, (payload) => {
-              console.log('New notification:', payload)
+          }, () => {
+              debugInfo.textContent = 'New notification received!'
               loadNotifications()
           })
          .subscribe()
@@ -98,9 +96,10 @@ export async function initLayout() {
         notifBtn.onclick = (e) => {
             e.stopPropagation()
             e.preventDefault()
-            console.log('Bell clicked, toggling dropdown') // Debug
+            const isHidden = notifDropdown.classList.contains('hidden')
             notifDropdown.classList.toggle('hidden')
             navMenu.classList.add('hidden')
+            debugInfo.textContent = isHidden ? 'Dropdown OPENED' : 'Dropdown CLOSED'
         }
 
     } else {
@@ -108,6 +107,7 @@ export async function initLayout() {
         loginBtn.classList.remove('hidden')
         logoutBtn.classList.add('hidden')
         notifBtn.classList.add('hidden')
+        debugInfo.textContent = 'Not logged in'
     }
 
     loginBtn.onclick = () => window.location.href = './login.html'
@@ -127,18 +127,19 @@ export async function initLayout() {
            .limit(10)
         
         if (error) {
-            console.error('Notification error:', error)
+            debugInfo.textContent = `DB Error: ${error.message}`
             return
         }
         
-        console.log('Loaded notifications for', currentUser.email, ':', notifs)
-        
         const unread = notifs.filter(n => !n.is_read).length
+        debugInfo.textContent = `User: ${currentUser.email} | Total: ${notifs.length} | Unread: ${unread}`
+        
         notifCount.textContent = unread
         
         if (unread > 0) {
             notifCount.classList.remove('hidden')
             notifCount.style.display = 'inline-block'
+            notifCount.style.visibility = 'visible'
         } else {
             notifCount.classList.add('hidden')
             notifCount.style.display = 'none'
@@ -171,4 +172,4 @@ export async function initLayout() {
     }
 
     return currentUser
-}
+        }
