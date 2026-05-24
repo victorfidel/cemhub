@@ -161,4 +161,4 @@ export async function initLayout() {
     }
 
     return currentUser
-}
+            }
