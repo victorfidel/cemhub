@@ -27,7 +27,6 @@ export async function initLayout() {
                         <button id="logoutBtn" class="hidden">Logout</button>
                     </div>
                 </nav>
-                <div id="debugInfo" style="background:#ff0;padding:6px;font-size:11px;text-align:center;word-break:break-all;"></div>
             </header>
         `)
     }
@@ -49,7 +48,6 @@ export async function initLayout() {
     const notifDropdown = document.getElementById('notifDropdown')
     const hamburgerBtn = document.getElementById('hamburgerBtn')
     const navMenu = document.getElementById('navMenu')
-    const debugInfo = document.getElementById('debugInfo')
 
     let notifChannel = null
     const { data: { session } } = await supabase.auth.getSession()
@@ -78,7 +76,6 @@ export async function initLayout() {
         logoutBtn.classList.remove('hidden')
         notifBtn.classList.remove('hidden')
         
-        debugInfo.textContent = `Logged in: ${currentUser.email} | ID: ${currentUser.id}`
         await loadNotifications()
 
         notifChannel = supabase.channel(`notifications:${currentUser.id}`)
@@ -87,19 +84,14 @@ export async function initLayout() {
               schema: 'public', 
               table: 'notifications',
               filter: `user_id=eq.${currentUser.id}`
-          }, () => {
-              debugInfo.textContent = 'New notification received!'
-              loadNotifications()
-          })
+          }, () => loadNotifications())
          .subscribe()
 
         notifBtn.onclick = (e) => {
             e.stopPropagation()
             e.preventDefault()
-            const isHidden = notifDropdown.classList.contains('hidden')
             notifDropdown.classList.toggle('hidden')
             navMenu.classList.add('hidden')
-            debugInfo.textContent = isHidden ? 'Dropdown OPENED' : 'Dropdown CLOSED'
         }
 
     } else {
@@ -107,7 +99,6 @@ export async function initLayout() {
         loginBtn.classList.remove('hidden')
         logoutBtn.classList.add('hidden')
         notifBtn.classList.add('hidden')
-        debugInfo.textContent = 'Not logged in'
     }
 
     loginBtn.onclick = () => window.location.href = './login.html'
@@ -127,13 +118,11 @@ export async function initLayout() {
            .limit(10)
         
         if (error) {
-            debugInfo.textContent = `DB Error: ${error.message}`
+            console.error('Notification error:', error)
             return
         }
         
         const unread = notifs.filter(n => !n.is_read).length
-        debugInfo.textContent = `User: ${currentUser.email} | Total: ${notifs.length} | Unread: ${unread}`
-        
         notifCount.textContent = unread
         
         if (unread > 0) {
@@ -172,4 +161,4 @@ export async function initLayout() {
     }
 
     return currentUser
-        }
+}
