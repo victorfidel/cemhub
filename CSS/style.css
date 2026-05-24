@@ -306,7 +306,7 @@ textarea { height: 120px; resize: vertical; }
   transform: rotate(-135deg);
 }
 
-/* Slide Menu From Left - BRANDED + COMPACT HEIGHT + DIVIDERS */
+/* Slide Menu From Left - WHITE BG + NAVY TEXT */
 .nav-menu {
   position: fixed;
   top: 60px;
@@ -314,9 +314,9 @@ textarea { height: 120px; resize: vertical; }
   width: 280px;
   height: auto;
   max-height: calc(100vh - 80px);
-  background: var(--primary);
+  background: var(--card);
   border-right: 3px solid var(--accent);
-  box-shadow: 2px 0 15px rgba(0,0,0,0.2);
+  box-shadow: 2px 0 15px rgba(0,0,0,0.1);
   padding: 0.5rem 0 1.5rem 0;
   z-index: 998;
   transition: left 0.3s ease;
@@ -332,11 +332,11 @@ textarea { height: 120px; resize: vertical; }
   display: block;
   padding: 1rem 1.5rem;
   text-decoration: none;
-  color: white;
-  font-weight: 500;
+  color: var(--primary);
+  font-weight: 600;
   transition: all 0.2s;
   border-left: 3px solid transparent;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid var(--border);
 }
 
 .nav-menu a:last-child {
@@ -344,8 +344,8 @@ textarea { height: 120px; resize: vertical; }
 }
 
 .nav-menu a:hover {
-  background: var(--primary-dark);
-  color: var(--accent);
+  background: var(--bg);
+  color: var(--primary-dark);
   border-left-color: var(--accent);
 }
 
