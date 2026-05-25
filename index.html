@@ -240,32 +240,45 @@
     
     await initLayout()
     
-    // Load 5 latest posts with author info
-    const { data: posts } = await supabase
+    // Load 3 latest posts for homepage
+    const { data: posts, error } = await supabase
       .from('articles')
       .select(`
         id, 
         title, 
         excerpt, 
         created_at,
-        profiles:user_id (full_name, avatar_url)
+        cover_image_url,
+        tag,
+        author_name,
+        author_avatar_url
       `)
       .order('created_at', { ascending: false })
-      .limit(5)
+      .limit(3)
+    
+    if (error) {
+      console.error('Supabase error:', error)
+      document.getElementById('latestPosts').innerHTML = '<p>No articles yet. Be the first to post!</p>'
+      return
+    }
     
     if (posts && posts.length > 0) {
       document.getElementById('latestPosts').innerHTML = posts.map(p => `
         <article class="post-card">
           <a href="./article.html?id=${p.id}">
-            <h3>${p.title}</h3>
-            <p class="post-excerpt">${p.excerpt || ''}</p>
-            <div class="post-meta">
-              <img src="${p.profiles?.avatar_url || './assets/default-avatar.png'}" 
-                   alt="${p.profiles?.full_name}" 
-                   class="author-avatar" loading="lazy">
-              <div>
-                <span class="author-name">${p.profiles?.full_name || 'CEM Member'}</span>
-                <time>${new Date(p.created_at).toLocaleDateString()}</time>
+            ${p.cover_image_url ? `<img src="${p.cover_image_url}" alt="${p.title}" class="post-cover" loading="lazy">` : ''}
+            <div class="post-content">
+              ${p.tag ? `<span class="post-tag">${p.tag}</span>` : ''}
+              <h3>${p.title}</h3>
+              <p class="post-excerpt">${p.excerpt || ''}</p>
+              <div class="post-meta">
+                <img src="${p.author_avatar_url || './assets/default-avatar.png'}" 
+                     alt="${p.author_name || 'CEM Member'}" 
+                     class="author-avatar" loading="lazy">
+                <div>
+                  <span class="author-name">${p.author_name || 'CEM Member'}</span>
+                  <time>${new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</time>
+                </div>
               </div>
             </div>
           </a>
@@ -285,4 +298,4 @@
     })
   </script>
 </body>
-  </html>
+              </html>
