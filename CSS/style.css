@@ -411,13 +411,13 @@ textarea { height: 120px; resize: vertical; }
 
 .hero-location {
   color: var(--accent);
-  font-weight: 600;
-  font-size: 0.9rem;
-  letter-spacing: 1px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 2px;
   text-transform: uppercase;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
+  }
 
 .hero h1 {
   font-size: 3rem;
