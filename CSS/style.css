@@ -384,20 +384,29 @@ textarea { height: 120px; resize: vertical; }
 
 /* ========== HOMEPAGE V2 STYLES ========== */
 
-/* Hero Section - Updated */
+/* Hero Section - Updated with Background Image */
 .hero {
+  position: relative;
   text-align: center;
-  padding: 5rem 1rem 4rem;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  padding: 6rem 1rem 5rem;
+  background: 
+    linear-gradient(135deg, rgba(10, 42, 94, 0.9) 0%, rgba(6, 26, 60, 0.95) 100%),
+    url('https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=1986&auto=format&fit=crop') center/cover no-repeat;
   border-radius: 0;
   box-shadow: none;
   margin-bottom: 0;
   color: white;
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .hero-content {
   max-width: 900px;
   margin: 0 auto;
+  position: relative;
+  z-index: 2;
 }
 
 .hero-location {
@@ -407,6 +416,7 @@ textarea { height: 120px; resize: vertical; }
   letter-spacing: 1px;
   text-transform: uppercase;
   margin-bottom: 1rem;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
 .hero h1 {
@@ -415,14 +425,16 @@ textarea { height: 120px; resize: vertical; }
   margin-bottom: 1.5rem;
   color: white;
   font-weight: 800;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
 
 .hero-subhead {
-  color: rgba(255,255,255,0.9);
+  color: rgba(255,255,255,0.95);
   font-size: 1.25rem;
   max-width: 700px;
   margin: 0 auto 2rem;
   line-height: 1.6;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.3);
 }
 
 .hero-cta {
@@ -440,6 +452,7 @@ textarea { height: 120px; resize: vertical; }
   font-weight: 700;
   transition: all 0.2s;
   border: 2px solid transparent;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .btn-primary {
@@ -450,16 +463,18 @@ textarea { height: 120px; resize: vertical; }
 .btn-primary:hover {
   background: var(--accent-dark);
   transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.3);
 }
 
 .btn-secondary {
-  background: transparent;
+  background: rgba(255,255,255,0.1);
   color: white;
   border-color: white;
+  backdrop-filter: blur(10px);
 }
 
 .btn-secondary:hover {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.2);
 }
 
 .btn-outline {
@@ -477,6 +492,24 @@ textarea { height: 120px; resize: vertical; }
   padding: 1rem 2.5rem;
   font-size: 1.1rem;
 }
+
+/* Mobile adjustment for hero */
+@media (max-width: 768px) {
+  .hero {
+    min-height: 60vh;
+    padding: 4rem 1rem 3rem;
+  }
+  
+  .hero h1 {
+    font-size: 2rem;
+  }
+  
+  .hero-subhead {
+    font-size: 1.1rem;
+  }
+  }
+
+
 
 /* 4 Pillars Section */
 .pillars {
