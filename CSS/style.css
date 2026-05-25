@@ -1783,3 +1783,234 @@ input[type="file"] {
     grid-template-columns: 1fr;
   }
 }
+
+  /* ========== FOUNDER PAGE STYLES ========== */
+
+.founder-hero {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  padding: 5rem 0 4rem;
+  color: white;
+}
+
+.founder-hero-grid {
+  display: grid;
+  gap: 3rem;
+  align-items: center;
+  grid-template-columns: 350px 1fr;
+}
+
+.founder-image img {
+  width: 100%;
+  border-radius: var(--radius);
+  border: 4px solid var(--accent);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.founder-label {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 0.5rem;
+}
+
+.founder-intro h1 {
+  font-size: 2.75rem;
+  margin-bottom: 0.5rem;
+  color: white;
+  font-weight: 800;
+}
+
+.founder-title {
+  font-size: 1.25rem;
+  color: rgba(255,255,255,0.9);
+  margin-bottom: 0.25rem;
+}
+
+.founder-location {
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.founder-quote {
+  font-size: 1.15rem;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.95);
+  font-style: italic;
+  border-left: 3px solid var(--accent);
+  padding-left: 1.5rem;
+  margin: 2rem 0;
+}
+
+.founder-socials {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.social-btn {
+  background: transparent;
+  color: white;
+  border: 2px solid white;
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius);
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.social-btn:hover {
+  background: var(--accent);
+  color: var(--primary-dark);
+  border-color: var(--accent);
+}
+
+/* Story Section */
+.founder-story {
+  padding: 5rem 0;
+  background: var(--bg);
+}
+
+.story-container {
+  max-width: 800px;
+}
+
+.founder-story h2 {
+  color: var(--primary);
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.story-content p {
+  color: var(--text);
+  font-size: 1.1rem;
+  line-height: 1.8;
+  margin-bottom: 1.5rem;
+}
+
+.story-content h3 {
+  color: var(--primary);
+  font-size: 1.5rem;
+  margin: 2.5rem 0 1rem;
+}
+
+/* Vision & Mission */
+.vision-mission {
+  padding: 5rem 0;
+  background: var(--card);
+}
+
+.vm-grid {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.vm-card {
+  background: var(--bg);
+  padding: 2.5rem 2rem;
+  border-radius: var(--radius);
+  border-top: 4px solid var(--accent);
+  text-align: center;
+}
+
+.vm-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.vm-card h3 {
+  color: var(--primary);
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.vm-card p {
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
+/* Credentials */
+.founder-credentials {
+  padding: 5rem 0;
+  background: var(--bg);
+}
+
+.credentials-grid {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.cred-card {
+  background: var(--card);
+  padding: 2rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.cred-card h4 {
+  color: var(--primary);
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--accent);
+}
+
+.cred-card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.cred-card li {
+  color: var(--text);
+  padding: 0.5rem 0;
+  padding-left: 1.5rem;
+  position: relative;
+  line-height: 1.6;
+}
+
+.cred-card li:before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* Founder Page Mobile */
+@media (max-width: 768px) {
+  .founder-hero-grid {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  
+  .founder-image {
+    max-width: 280px;
+    margin: 0 auto;
+  }
+  
+  .founder-intro h1 {
+    font-size: 2rem;
+  }
+  
+  .founder-quote {
+    font-size: 1rem;
+    padding-left: 1rem;
+  }
+  
+  .founder-socials {
+    justify-content: center;
+  }
+  
+  .vm-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .credentials-grid {
+    grid-template-columns: 1fr;
+  }
+  }
