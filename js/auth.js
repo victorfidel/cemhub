@@ -57,19 +57,34 @@ authForm.onsubmit = async (e) => {
                 throw new Error('Please fill in all fields')
             }
 
-            const { data, error } = await supabase.auth.signUp({
+            // 1. Sign up the user
+            const { data: authData, error: signUpError } = await supabase.auth.signUp({
                 email: email.value,
                 password: password.value,
                 options: {
                     data: {
-                        full_name: fullName.value,
-                        nationality: nationality.value,
-                        state_of_residence: state.value,
-                        date_of_birth: dob.value
+                        full_name: fullName.value
                     }
                 }
             })
-            if (error) throw error
+            if (signUpError) throw signUpError
+            
+            // 2. Upsert into profiles table with new fields
+            if (authData.user) {
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .upsert({
+                        id: authData.user.id,
+                        full_name: fullName.value,
+                        nationality: nationality.value,
+                        state_of_residence: state.value,
+                        date_of_birth: dob.value,
+                        updated_at: new Date().toISOString()
+                    }, {
+                        onConflict: 'id'
+                    })
+                if (profileError) throw profileError
+            }
             
             msg.className = 'success'
             msg.textContent = 'Check your email to confirm your account!'
