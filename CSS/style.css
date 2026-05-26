@@ -2048,3 +2048,69 @@ input[type="file"] {
     grid-template-columns: 1fr;
   }
   }
+
+/* Glossy/Glass effect for hero sections */
+.hero-gold {
+  background: linear-gradient(135deg, rgba(204, 153, 0, 0.85), rgba(184, 134, 11, 0.85));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle shine overlay */
+.hero-gold::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.1), 
+    transparent
+  );
+  animation: shine 3s infinite;
+}
+
+.hero-navy {
+  background: linear-gradient(135deg, rgba(25, 47, 106, 0.85), rgba(13, 27, 76, 0.85));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-navy::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.08), 
+    transparent
+  );
+  animation: shine 3s infinite;
+}
+
+@keyframes shine {
+  0% { left: -100%; }
+  50% { left: 100%; }
+  100% { left: 100%; }
+}
+
+/* Make sure text stays above the shine effect */
+.hero-gold > *, .hero-navy > * {
+  position: relative;
+  z-index: 2;
+                  }
