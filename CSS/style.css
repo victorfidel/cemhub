@@ -2049,3 +2049,120 @@ input[type="file"] {
   }
   }
 
+/* Navy Hero with Glass Effect */
+.founder-her {
+  position: relative;
+  background-image: url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1600&q=80');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  padding: 4rem 1rem;
+}
+
+/* Dark overlay so text is readable */
+.founder-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(13, 27, 76, 0.75);
+  z-index: 1;
+}
+
+/* The glass card */
+.founder-card {
+  position: relative;
+  z-index: 2;
+  max-width: 700px;
+  margin: 0 auto;
+  background: rgba(25, 47, 106, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 16px;
+  padding: 3rem 2rem;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  text-align: center;
+}
+
+.founder-card h1, 
+.founder-card h2, 
+.founder-card p {
+  color: white;
+}
+
+.founder-card h1 {
+  font-size: 2.5rem;
+  margin: 0.5rem 0;
+}
+
+.founder-card .label {
+  color: #fbbf24;
+  font-weight: 600;
+  font-size: 0.875rem;
+  letter-spacing: 1px;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+}
+
+.founder-card .quote {
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.9);
+  border-left: 3px solid #fbbf24;
+  padding-left: 1rem;
+  margin: 2rem 0;
+  text-align: left;
+  line-height: 1.7;
+}
+
+.founder-img {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid rgba(255,255,255,0.3);
+  margin-bottom: 1rem;
+}
+
+.founder-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+}
+
+.founder-buttons a {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.founder-buttons a:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .founder-hero {
+    background-attachment: scroll; /* Fixed doesn't work well on mobile */
+  }
+  .founder-card {
+    padding: 2rem 1.25rem;
+    margin: 0 0.5rem;
+  }
+  .founder-card h1 {
+    font-size: 2rem;
+  }
+}
+
