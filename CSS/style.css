@@ -422,7 +422,7 @@ textarea { height: 120px; resize: vertical; }
   max-width: 900px;
   margin: 0 auto;
   position: relative;
-  z-index: 2;
+  z-index: 3;
 }
 
 .hero-location {
