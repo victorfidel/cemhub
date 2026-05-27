@@ -643,12 +643,6 @@ textarea { height: 120px; resize: vertical; }
   margin-bottom: 1.5rem;
 }
 
-.about-image img {
-  width: 100%;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-}
-
 /* CTA Banner */
 .cta-banner {
   background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
