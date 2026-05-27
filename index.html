@@ -29,40 +29,40 @@
     </section>
 
     <!-- 2. 4 Pillars -->
-    <section id="pillars" class="pillars">
-      <div class="container">
-        <h2 class="section-title">The Four Pillars of CEM Hub</h2>
-        <div class="pillars-grid">
-          <article class="pillar-card">
-            <div class="pillar-icon">🎓</div>
-            <h3>Academic Excellence</h3>
-            <p>Peer-reviewed articles, research collaborations, and study groups with FULafia faculty and scholars.</p>
-            <a href="./blog.html?cat=academic">Browse Research →</a>
-          </article>
-          
-          <article class="pillar-card">
-            <div class="pillar-icon">⚡</div>
-            <h3>Skill Acquisition</h3>
-            <p>Hands-on workshops in tech, design, agriculture, and vocational trades. Get certified.</p>
-            <a href="./blog.html?cat=skills">View Workshops →</a>
-          </article>
-          
-          <article class="pillar-card">
-            <div class="pillar-icon">🌟</div>
-            <h3>Leadership Development</h3>
-            <p>Mentorship programs, public speaking clubs, and our Hall of Fame for emerging leaders.</p>
-            <a href="./hall-of-fame.html">Meet Leaders →</a>
-          </article>
-          
-          <article class="pillar-card">
-            <div class="pillar-icon">🚀</div>
-            <h3>Entrepreneurship</h3>
-            <p>Business incubation, pitch competitions, and seed grants for student ventures.</p>
-            <a href="./blog.html?cat=business">Launch Your Venture →</a>
-          </article>
-        </div>
-      </div>
-    </section>
+<section id="pillars" class="pillars">
+  <div class="container">
+    <h2 class="section-title reveal">The Four Pillars of CEM Hub</h2>
+    <div class="pillars-grid">
+      <article class="pillar-card reveal">
+        <div class="pillar-icon">🎓</div>
+        <h3>Academic Excellence</h3>
+        <p>Peer-reviewed articles, research collaborations, and study groups with FULafia faculty and scholars.</p>
+        <a href="./blog.html?cat=academic">Browse Research →</a>
+      </article>
+      
+      <article class="pillar-card reveal">
+        <div class="pillar-icon">⚡</div>
+        <h3>Skill Acquisition</h3>
+        <p>Hands-on workshops in tech, design, agriculture, and vocational trades. Get certified.</p>
+        <a href="./blog.html?cat=skills">View Workshops →</a>
+      </article>
+      
+      <article class="pillar-card reveal">
+        <div class="pillar-icon">🌟</div>
+        <h3>Leadership Development</h3>
+        <p>Mentorship programs, public speaking clubs, and our Hall of Fame for emerging leaders.</p>
+        <a href="./hall-of-fame.html">Meet Leaders →</a>
+      </article>
+      
+      <article class="pillar-card reveal">
+        <div class="pillar-icon">🚀</div>
+        <h3>Entrepreneurship</h3>
+        <p>Business incubation, pitch competitions, and seed grants for student ventures.</p>
+        <a href="./blog.html?cat=business">Launch Your Venture →</a>
+      </article>
+    </div>
+  </div>
+</section>
 
 
     <!-- 7. Testimonials -->
@@ -140,41 +140,20 @@
     
     await initLayout()
     
-    // Load 5 latest posts with author info
-    const { data: posts } = await supabase
-      .from('articles')
-      .select(`
-        id, 
-        title, 
-        excerpt, 
-        created_at,
-        profiles:user_id (full_name, avatar_url)
-      `)
-      .order('created_at', { ascending: false })
-      .limit(5)
-    
-    if (posts && posts.length > 0) {
-      document.getElementById('latestPosts').innerHTML = posts.map(p => `
-        <article class="post-card">
-          <a href="./article.html?id=${p.id}">
-            <h3>${p.title}</h3>
-            <p class="post-excerpt">${p.excerpt || ''}</p>
-            <div class="post-meta">
-              <img src="${p.profiles?.avatar_url || './assets/default-avatar.png'}" 
-                   alt="${p.profiles?.full_name}" 
-                   class="author-avatar" loading="lazy">
-              <div>
-                <span class="author-name">${p.profiles?.full_name || 'CEM Member'}</span>
-                <time>${new Date(p.created_at).toLocaleDateString()}</time>
-              </div>
-            </div>
-          </a>
-        </article>
-      `).join('')
-    } else {
-      document.getElementById('latestPosts').innerHTML = '<p>No articles yet. Be the first to post!</p>'
-    }
+    // Card reveal transition 
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('active');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, {
+    threshold: 0.15,
+    rootMargin: '0px 0px -50px 0px' // triggers a bit early
+  });
 
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     // Newsletter form handler
     document.getElementById('newsletterForm')?.addEventListener('submit', async (e) => {
       e.preventDefault()
