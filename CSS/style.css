@@ -547,13 +547,32 @@ textarea { height: 120px; resize: vertical; }
   box-shadow: var(--shadow);
   text-align: center;
   border-top: 4px solid var(--accent);
-  transition: transform 0.2s, box-shadow 0.2s;
+  
+  /* Updated: Combined hover + reveal transitions */
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out, box-shadow 0.2s;
+  
+  /* Scroll reveal base state */
+  opacity: 0;
+  transform: translateY(30px);
 }
 
-.pillar-card:hover {
+/* Reveal active state */
+.pillar-card.reveal.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Keep your hover effect - works after reveal */
+.pillar-card.reveal.active:hover {
   transform: translateY(-4px);
   box-shadow: 0 10px 25px -3px rgb(0 0 0 / 0.15);
 }
+
+/* Stagger the cards */
+.pillar-card.reveal:nth-child(1) { transition-delay: 0s; }
+.pillar-card.reveal:nth-child(2) { transition-delay: 0.1s; }
+.pillar-card.reveal:nth-child(3) { transition-delay: 0.2s; }
+.pillar-card.reveal:nth-child(4) { transition-delay: 0.3s; }
 
 .pillar-icon {
   font-size: 3rem;
@@ -581,7 +600,29 @@ textarea { height: 120px; resize: vertical; }
 .pillar-card a:hover {
   color: var(--accent);
 }
-  
+
+/* Reveal for the section title too */
+.section-title.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.section-title.reveal.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Accessibility: disable if user prefers reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .pillar-card,
+  .section-title.reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 /* About Preview */
 .about-preview {
   padding: 5rem 0;
