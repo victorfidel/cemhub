@@ -574,11 +574,6 @@ textarea { height: 120px; resize: vertical; }
 .pillar-card.reveal:nth-child(3) { transition-delay: 0.2s; }
 .pillar-card.reveal:nth-child(4) { transition-delay: 0.3s; }
 
-.pillar-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
 .pillar-card h3 {
   color: var(--primary);
   margin-bottom: 1rem;
