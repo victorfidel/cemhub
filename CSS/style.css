@@ -626,22 +626,60 @@ textarea { height: 120px; resize: vertical; }
 
 .about-grid {
   display: grid;
-  gap: 3rem;
-  align-items: center;
-  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  grid-template-columns: repeat(3, 1fr); /* 3 equal columns */
 }
 
-.about-grid h2 {
+.about-card {
+  background: var(--card);
+  padding: 2.5rem 2rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  
+  /* This is the key: makes all cards same height */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.about-card h2,
+.about-card h3 {
   color: var(--primary);
-  font-size: 2rem;
+  font-size: 1.5rem;
   margin-bottom: 1rem;
+  line-height: 1.3;
 }
 
-.about-grid p {
+.about-card p {
   color: var(--text-muted);
   line-height: 1.7;
   margin-bottom: 1.5rem;
+  
+  /* Pushes button to bottom so all cards align */
+  flex-grow: 1;
 }
+
+.about-card .btn {
+  align-self: flex-start; /* keeps button left-aligned */
+  margin-top: auto; /* pins button to bottom */
+}
+
+/* Mobile: stack them */
+@media (max-width: 768px) {
+  .about-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .about-card {
+    text-align: center;
+  }
+  
+  .about-card .btn {
+    align-self: center;
+  }
+}
+
 
 /* CTA Banner */
 .cta-banner {
